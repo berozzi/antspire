@@ -1,6 +1,6 @@
 ﻿using System;
 using UnityEngine;
-using UnityEngine.InputSystem;// wymagane!
+using UnityEngine.InputSystem;
 using static UnityEditor.SceneView;
 
 public class CameraMovement : MonoBehaviour
@@ -9,13 +9,12 @@ public class CameraMovement : MonoBehaviour
     private Vector2 moveInput;
     private float zoomInput;
 
-    [Header("Ustawienia kamery")]
+    [Header("Camera settings")]
     [SerializeField] float moveSpeed = 20f;
-    public Transform cameraTransform;
-    public float zoomSpeed = 20f;
-    public float minZoom = 5f;
-    public float maxZoom = 50f;
-
+    [SerializeField] Transform cameraTransform;
+    [SerializeField] float zoomSpeed = 20f;
+    [SerializeField] float minZoom = 5f;
+    [SerializeField] float maxZoom = 50f;
     [SerializeField] private Camera cam;
 
     private void Awake()
@@ -44,9 +43,8 @@ public class CameraMovement : MonoBehaviour
         // Ruch kamery po płaszczyźnie
         Vector3 move = new Vector3(moveInput.x, 0, moveInput.y) * moveSpeed * Time.deltaTime;
         transform.Translate(move, Space.World);
-
+        // funkcja zooma
         Zoom();
-
     }
 
     void Zoom()
@@ -62,14 +60,10 @@ public class CameraMovement : MonoBehaviour
                 Mouse.current.position.y.ReadValue(),
                 cam.nearClipPlane)
             );
-
             // kierunek do kursora na płaszczyźnie XY/Z
             Vector3 direction = (cursorWorldPos - cameraTransform.position).normalized;
-
             // przesuwasz kamerę przy zoomie
             cameraTransform.position += direction * sizeDiff * zoomSpeed * Time.deltaTime;
-            // Scroll w górę zmniejsza orthographicSize  przybliża
-            
         }
     }
 }
