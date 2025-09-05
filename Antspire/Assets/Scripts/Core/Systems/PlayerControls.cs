@@ -77,191 +77,24 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
     /// <summary>
     /// Provides access to the underlying asset instance.
     /// </summary>
-    public InputActionAsset asset { get; }
+    
 
     /// <summary>
     /// Constructs a new instance.
     /// </summary>
-    public @PlayerControls()
-    {
-        asset = InputActionAsset.FromJson(@"{
-    ""name"": ""PlayerControls"",
-    ""maps"": [
-        {
-            ""name"": ""Camera"",
-            ""id"": ""09a01211-f4a6-4938-9cb4-4c9243213c3d"",
-            ""actions"": [
-                {
-                    ""name"": ""Move"",
-                    ""type"": ""Value"",
-                    ""id"": ""1441dfd6-6eca-4cb6-9049-0178a7725092"",
-                    ""expectedControlType"": ""Vector2"",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": true
-                },
-                {
-                    ""name"": ""Zoom"",
-                    ""type"": ""Value"",
-                    ""id"": ""d2556216-cacd-48bc-ae1b-29112bf44b23"",
-                    ""expectedControlType"": ""Axis"",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": true
-                }
-            ],
-            ""bindings"": [
-                {
-                    ""name"": ""WASD"",
-                    ""id"": ""a80884e7-e106-4418-a413-865c2f96b401"",
-                    ""path"": ""2DVector"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Move"",
-                    ""isComposite"": true,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": ""up"",
-                    ""id"": ""bcde2768-eec4-406a-9e49-f2432e74a570"",
-                    ""path"": ""<Keyboard>/w"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Move"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": true
-                },
-                {
-                    ""name"": ""down"",
-                    ""id"": ""7d9c90e6-091b-4a19-b994-56a04e3e2715"",
-                    ""path"": ""<Keyboard>/s"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Move"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": true
-                },
-                {
-                    ""name"": ""left"",
-                    ""id"": ""2fb4da05-6cf0-4e42-b05c-66f19aee08c5"",
-                    ""path"": ""<Keyboard>/a"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Move"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": true
-                },
-                {
-                    ""name"": ""right"",
-                    ""id"": ""8732983b-1527-4dfb-9e31-61dacf7454b9"",
-                    ""path"": ""<Keyboard>/d"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Move"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": true
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""dfd9aa99-1c4e-4c20-a35f-aabe527fc45d"",
-                    ""path"": ""<Mouse>/scroll/y"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Zoom"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                }
-            ]
-        }
-    ],
-    ""controlSchemes"": []
-}");
-        // Camera
-        m_Camera = asset.FindActionMap("Camera", throwIfNotFound: true);
-        m_Camera_Move = m_Camera.FindAction("Move", throwIfNotFound: true);
-        m_Camera_Zoom = m_Camera.FindAction("Zoom", throwIfNotFound: true);
-    }
+    
 
-    ~@PlayerControls()
-    {
-        UnityEngine.Debug.Assert(!m_Camera.enabled, "This will cause a leak and performance issues, PlayerControls.Camera.Disable() has not been called.");
-    }
+   
 
     /// <summary>
     /// Destroys this asset and all associated <see cref="InputAction"/> instances.
     /// </summary>
-    public void Dispose()
-    {
-        UnityEngine.Object.Destroy(asset);
-    }
+    
 
-    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.bindingMask" />
-    public InputBinding? bindingMask
-    {
-        get => asset.bindingMask;
-        set => asset.bindingMask = value;
-    }
+   
 
-    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.devices" />
-    public ReadOnlyArray<InputDevice>? devices
-    {
-        get => asset.devices;
-        set => asset.devices = value;
-    }
-
-    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.controlSchemes" />
-    public ReadOnlyArray<InputControlScheme> controlSchemes => asset.controlSchemes;
-
-    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.Contains(InputAction)" />
-    public bool Contains(InputAction action)
-    {
-        return asset.Contains(action);
-    }
-
-    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.GetEnumerator()" />
-    public IEnumerator<InputAction> GetEnumerator()
-    {
-        return asset.GetEnumerator();
-    }
-
-    /// <inheritdoc cref="IEnumerable.GetEnumerator()" />
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
-    }
-
-    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.Enable()" />
-    public void Enable()
-    {
-        asset.Enable();
-    }
-
-    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.Disable()" />
-    public void Disable()
-    {
-        asset.Disable();
-    }
-
-    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.bindings" />
-    public IEnumerable<InputBinding> bindings => asset.bindings;
-
-    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.FindAction(string, bool)" />
-    public InputAction FindAction(string actionNameOrId, bool throwIfNotFound = false)
-    {
-        return asset.FindAction(actionNameOrId, throwIfNotFound);
-    }
-
-    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.FindBinding(InputBinding, out InputAction)" />
-    public int FindBinding(InputBinding bindingMask, out InputAction action)
-    {
-        return asset.FindBinding(bindingMask, out action);
-    }
+    
+    
 
     // Camera
     private readonly InputActionMap m_Camera;
