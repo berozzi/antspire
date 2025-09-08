@@ -1,13 +1,15 @@
 using UnityEngine;
 using UnityEngine.AI;
+using static UnityEngine.GraphicsBuffer;
 
 [RequireComponent(typeof(NavMeshAgent))]
 public class AntAICollecting : MonoBehaviour
 {
-    public Transform targetResource;
-    public Transform homeBase;
+    [SerializeField] Transform targetResource;
+    [SerializeField] Transform homeBase;
+    [SerializeField] Transform headDummy;
     Quaternion initialRotation;
-    float collectionRange = 4f;
+    float collectionRange = 7f;
     float collectionTime = 2.0f;
     NavMeshAgent agent;
     bool isCollecting = false;
@@ -39,25 +41,52 @@ public class AntAICollecting : MonoBehaviour
         if (hasResource)
         {
             ReturnToBase();
+            HeadDummyMovement(homeBase);
         }
         else
         {
             MoveToResource();
+            HeadDummyMovement(targetResource);
+        }
+        // Always handle rotation to face movement direction but for now it isn't working properly
+        // Also HeadDummyMovement is overriding it or simply don't work well with it
+        // Future me: fix Z rotation issue, maybe use another approach and don't set X and Y rotation to constant values 
+        HandleRotation();
+    }
+    private void HeadDummyMovement(Transform target)
+    {
+        if (target != null)
+        {
+            Vector3 dir = (target.position - headDummy.position).normalized;
+            Quaternion lookRot = Quaternion.LookRotation(dir, Vector3.up);
+            headDummy.rotation = Quaternion.Slerp(headDummy.rotation, lookRot, Time.deltaTime * 8f);
         }
     }
-    void LateUpdate()
+    private void HandleRotation()
     {
-        if (agent.velocity.magnitude > 0.1f)
-        {
-            Vector3 direction = agent.velocity.normalized;
-            float targetAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        Vector3 velocity = agent.velocity;
 
-            // Keep your X rotation (-90) but update Z based on movement
-            transform.rotation = Quaternion.Euler(-90, 0, targetAngle);
+        if (velocity.sqrMagnitude > 0.01f)
+        {
+            // kierunek w poziomie
+            Vector3 flatDir = new Vector3(velocity.x, 0f, velocity.z).normalized;
+
+            if (flatDir.sqrMagnitude > 0.001f)
+            {
+                float targetAngle = Mathf.Atan2(flatDir.z, flatDir.x) * Mathf.Rad2Deg;
+
+                // X zostaje -90 (¿eby mrówka sta³a na ziemi), Y zostaje taki jak w initialRotation,
+                // Z obraca siê zgodnie z kierunkiem ruchu
+                transform.rotation = Quaternion.Euler(
+                    initialRotation.eulerAngles.x,
+                    initialRotation.eulerAngles.y,
+                    targetAngle
+                );
+            }
         }
         else
         {
-            transform.rotation = initialRotation; // Return to (-90, 0, 89)
+            transform.rotation = initialRotation;
         }
     }
     private void MoveToResource()
@@ -65,7 +94,6 @@ public class AntAICollecting : MonoBehaviour
         if (targetResource == null || isCollecting) return;
         agent.SetDestination(targetResource.position);
         distanceToTarget = Vector3.Distance(transform.position, targetResource.position);
-        LookAt(targetResource.position);
         Debug.Log($"Moving to resource, distance: {distanceToTarget}");
         if (distanceToTarget <= collectionRange)
         {
@@ -79,7 +107,6 @@ public class AntAICollecting : MonoBehaviour
         Debug.Log("Returning to base...");
         agent.SetDestination(homeBase.position);
         distanceToTarget = Vector3.Distance(transform.position, homeBase.position);
-        LookAt(homeBase.position);
         if (distanceToTarget <= collectionRange)
         {
             Debug.Log("Reached base, dropping off resource...");
@@ -96,12 +123,5 @@ public class AntAICollecting : MonoBehaviour
         hasResource = true;
         isCollecting = false;
         agent.isStopped = false;
-    }
-
-    void LookAt(Vector3 target)
-    {
-        Vector3 direction = (target - transform.position).normalized;
-        Quaternion lookRotation = Quaternion.LookRotation(new Vector3(direction.x, 0, direction.z));
-        transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 5f);
     }
 }
