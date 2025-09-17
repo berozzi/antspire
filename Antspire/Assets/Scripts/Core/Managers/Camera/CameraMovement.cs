@@ -1,69 +1,59 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
-using static UnityEditor.SceneView;
 
 public class CameraMovement : MonoBehaviour
 {
-    private PlayerControls controls;
-    private Vector2 moveInput;
-    private float zoomInput;
-
     [Header("Camera settings")]
     [SerializeField] float moveSpeed = 20f;
-    [SerializeField] Transform cameraTransform;
     [SerializeField] float zoomSpeed = 20f;
     [SerializeField] float minZoom = 5f;
     [SerializeField] float maxZoom = 50f;
     [SerializeField] private Camera cam;
 
-    private void Awake()
+    private void Start()
     {
-        controls = new PlayerControls();
-        // Podpinamy eventy pod akcje
-        controls.Camera.Move.performed += ctx => moveInput = ctx.ReadValue<Vector2>();
-        controls.Camera.Move.canceled += ctx => moveInput = Vector2.zero;
-
-        controls.Camera.Zoom.performed += ctx => zoomInput = ctx.ReadValue<float>();
-        controls.Camera.Zoom.canceled += ctx => zoomInput = 0f;
-    }
-
-    private void OnEnable()
-    {
-        controls.Enable();
-    }
-
-    private void OnDisable()
-    {
-        controls.Disable();
+        if (cam == null)
+            cam = Camera.main;
     }
 
     private void Update()
     {
-        // Ruch kamery po płaszczyźnie
-        Vector3 move = new Vector3(moveInput.x, 0, moveInput.y) * moveSpeed * Time.deltaTime;
-        transform.Translate(move, Space.World);
-        // funkcja zooma
-        Zoom();
+        HandleMovement();
+        HandleZoom();
     }
 
-    void Zoom()
+    private void HandleMovement()
     {
-        float oldSize = cam.orthographicSize;
-        cam.orthographicSize -= zoomInput * zoomSpeed * Time.deltaTime;
-        cam.orthographicSize = Mathf.Clamp(cam.orthographicSize, minZoom, maxZoom);
-        float sizeDiff = oldSize - cam.orthographicSize;
-        if (Mathf.Abs(zoomInput) > 0.001f)
+        Vector2 moveInput = new Vector2(
+            Keyboard.current.aKey.isPressed ? -1 : Keyboard.current.dKey.isPressed ? 1 : 0,
+            Keyboard.current.sKey.isPressed ? -1 : Keyboard.current.wKey.isPressed ? 1 : 0
+        );
+
+        if (moveInput != Vector2.zero)
         {
-            Vector3 cursorWorldPos = cam.ScreenToWorldPoint(
-            new Vector3(Mouse.current.position.x.ReadValue(),
-                Mouse.current.position.y.ReadValue(),
-                cam.nearClipPlane)
-            );
-            // kierunek do kursora na płaszczyźnie XY/Z
-            Vector3 direction = (cursorWorldPos - cameraTransform.position).normalized;
-            // przesuwasz kamerę przy zoomie
-            cameraTransform.position += direction * sizeDiff * zoomSpeed * Time.deltaTime;
+            Vector3 movement = new Vector3(moveInput.x, 0f, moveInput.y) * moveSpeed * Time.deltaTime;
+            movement = transform.TransformDirection(movement);
+            movement.y = 0;
+            transform.Translate(movement, Space.World);
+        }
+    }
+
+    private void HandleZoom()
+    {
+        float scroll = Mouse.current.scroll.ReadValue().y;
+
+        if (scroll != 0f && cam != null)
+        {
+            float zoomChange = scroll * zoomSpeed * Time.deltaTime;
+
+            if (cam.orthographic)
+            {
+                cam.orthographicSize = Mathf.Clamp(cam.orthographicSize - zoomChange, minZoom, maxZoom);
+            }
+            else
+            {
+                cam.fieldOfView = Mathf.Clamp(cam.fieldOfView - zoomChange, minZoom, maxZoom);
+            }
         }
     }
 }
