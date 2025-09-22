@@ -4,10 +4,11 @@ public class GenerateGrid : MonoBehaviour
 {
 
     [Header("Hexagon Settings")]
-    float hexSize = 9.25f;
-    int gridWidth = 20;     // szerokoœæ mapy w hexach
-    int gridHeight = 20;
+    public float hexSize = 9.25f;
+    public int gridWidth = 20;     // szerokoœæ mapy w hexach
+    public int gridHeight = 20;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
+    
     public void Generate(GameObject hexPrefab1, GameObject hexPrefab2)
     {
         // Iteracja przez wszystkie komórki w siatce
@@ -16,7 +17,7 @@ public class GenerateGrid : MonoBehaviour
             for (int x = 0; x < gridWidth; x++)
             {
                 // Konwersja wspó³rzêdnych siatki na wspó³rzêdne œwiatowe
-                Vector3 position = CalculateWorldPosition(x, z);
+                Vector3 position = CalculateWorldPosition(x, z, hexSize);
                 GameObject hex;
                 // Instantiate hexagonu
                 if (z % 2 == 1)
@@ -38,15 +39,15 @@ public class GenerateGrid : MonoBehaviour
             }
         }
     }
-    public Vector3 CalculateWorldPosition(int x, int z)
+    public Vector3 CalculateWorldPosition(int x, int z, float hex)
     {
         // Obliczenie pozycji w przestrzeni 3D
-        float xPos = x * hexSize * 1.43f; // 1.5 = 2 * 0.75 (offset w osi X)
+        float xPos = x * hex * 1.43f; // 1.5 = 2 * 0.75 (offset w osi X)
         float zPos = z * 14f / 1.28f; // Odstêp w osi Z
                                       // Przesuniêcie co drugiego rzêdu dla efektu naprzemiennego
         if (z % 2 == 1)
         {
-            xPos += hexSize * 0.75f;
+            xPos += hex * 0.75f;
         }
 
         return new Vector3(xPos, 0f, zPos);

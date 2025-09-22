@@ -61,26 +61,34 @@ public class HexClick : MonoBehaviour
 
     private void OnClick(InputAction.CallbackContext context)
     {
-        // Pobieramy pozycjê myszy
+        HexCell cell = ReturnTargetHexcell();
+        if (cell != null)
+        {
+            Debug.Log($"Klikn¹³eœ hex: {cell.xPosition}, {cell.zPosition}");
+
+            if (gridGenerator != null)
+            {
+                Vector3 worldPos = gridGenerator.CalculateWorldPosition(cell.xPosition, cell.zPosition, gridGenerator.hexSize);
+                // TUTAJ KOD OD MROWKI ZEBY POSZLA DO CELU ZIOMA
+            }
+        }
+    }
+    public HexCell ReturnTargetHexcell()
+    {
         Vector2 mousePos = Mouse.current.position.ReadValue();
         Ray ray = mainCamera.ScreenPointToRay(mousePos);
-
         if (Physics.Raycast(ray, out RaycastHit hit))
         {
             GameObject clickedHex = hit.collider.gameObject;
-
-            // Wersja z komponentem HexCell
-            HexCell cell = clickedHex.GetComponent<HexCell>();
-            if (cell != null)
+            if (clickedHex != null)
             {
-                Debug.Log($"Klikn¹³eœ hex: {cell.xPosition}, {cell.zPosition}");
+                HexCell tile = clickedHex.GetComponent<HexCell>();
 
-                if (gridGenerator != null)
-                {
-                    Vector3 worldPos = gridGenerator.CalculateWorldPosition(cell.xPosition, cell.zPosition);
-                    // TUTAJ KOD OD MROWKI ZEBY POSZLA DO CELU ZIOMA
-                }
+                return tile;
             }
+            // Wersja z komponentem HexCell
+            return null;
         }
+        return null;
     }
 }
