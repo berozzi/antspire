@@ -1,48 +1,69 @@
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlaceDownStructure : MonoBehaviour
 {
-    [SerializeField] private InputAction buildAction; // przypisz tê akcjê w inspektorze
-    HexClick hexClick;
+    float cellSize = 1f; // rozmiar komórki gridu
+    InputAction buildAction; // przypisz tê akcjê w inspektorze
     public GameObject structurePrefab;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+
+    private void Awake()
+    {
+        buildAction = new InputAction("LeftClick", binding: "<Mouse>/leftButton");
+    }
     private void OnEnable()
     {
         buildAction.Enable();
         buildAction.performed += OnBuild; // rejestrujesz event
     }
-
     private void OnDisable()
     {
         buildAction.performed -= OnBuild;
         buildAction.Disable();
     }
-
     void Start()
     {
-        hexClick = FindAnyObjectByType<HexClick>();
+        if (structurePrefab == null)
+        {
+            Debug.LogError("Assign the structure which you want to build.");
+        }
     }
-
     private void OnBuild(InputAction.CallbackContext context)
     {
-        TryPlaceStructure();
+        PlaceBuilding();
+    }
+    void PlaceBuilding()
+    {
+        // Pobierz pozycjê myszy w œwiecie
+        Vector3 mousePos = GetMouseWorldPosition();
+
+        // Przyci¹gnij do gridu
+        Vector3 gridPos = SnapBuildingToGrid(mousePos);
+
+        // Stwórz budynek
+        Instantiate(structurePrefab, gridPos, Quaternion.identity);
     }
 
-    void TryPlaceStructure()
+    Vector3 GetMouseWorldPosition()
     {
-        var cell = hexClick.ReturnTargetHexcell();
-        var structurePosition = cell.transform.position;
-        structurePosition.y += 1f;
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        RaycastHit hit;
 
-        if (cell != null && structurePrefab != null)
+        if (Physics.Raycast(ray, out hit))
         {
-            Instantiate(structurePrefab, structurePosition, Quaternion.identity);
-            Debug.Log($"Placed structure at hex: {cell.xPosition}, {cell.zPosition}");
+            return hit.point;
         }
-        else
-        {
-            Debug.Log("No cell or structurePrefab is null");
-        }
+
+        return Vector3.zero;
+    }
+
+    public Vector3 SnapBuildingToGrid(Vector3 worldPos)
+    {
+        float halfCell = cellSize * 0.5f;
+        int x = Mathf.RoundToInt((worldPos.x - halfCell) / cellSize);
+        int z = Mathf.RoundToInt((worldPos.z - halfCell) / cellSize);
+
+        return new Vector3(x * cellSize + halfCell, worldPos.y, z * cellSize + halfCell);
     }
 }

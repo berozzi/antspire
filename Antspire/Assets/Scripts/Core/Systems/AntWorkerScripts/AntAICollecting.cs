@@ -5,11 +5,17 @@ using static UnityEngine.GraphicsBuffer;
 [RequireComponent(typeof(NavMeshAgent))]
 public class AntAICollecting : MonoBehaviour
 {
+    /*
+     Podsumowanie kodu:
+    Kod dzia³a perfekcyjnie. Mrówka porusza siê do zasobu, zbiera go po dotarciu, a nastêpnie wraca do bazy. Wystarczy ustawiæ jedynie drop off time.
+    Problemy: rotacja - mrówka krêci siê w ka¿d¹ stronê a nie w kierunku w którym idzie (funkcja HeadDummy jest do poprawy)
+    ¯eby mrówka nie wchodzi³a w œciany podczas poruszania siê, dostosujemy te œciany aby mia³y swoj¹ odleg³oœæ/wielkoœæ w sensie ogólnie dystants do którego nie mo¿e podejœæ mrówka.
+     */
     [SerializeField] Transform targetResource;
     [SerializeField] Transform homeBase;
-    [SerializeField] Transform headDummy;
+    //[SerializeField] Transform headDummy;
     Quaternion initialRotation;
-    float collectionRange = 7f;
+    float collectionRange = 2f;
     float collectionTime = 2.0f;
     NavMeshAgent agent;
     bool isCollecting = false;
@@ -41,27 +47,27 @@ public class AntAICollecting : MonoBehaviour
         if (hasResource)
         {
             ReturnToBase();
-            HeadDummyMovement(homeBase);
+            //HeadDummyMovement(homeBase);
         }
         else
         {
             MoveToResource();
-            HeadDummyMovement(targetResource);
+            //HeadDummyMovement(targetResource);
         }
         // Always handle rotation to face movement direction but for now it isn't working properly
         // Also HeadDummyMovement is overriding it or simply don't work well with it
         // Future me: fix Z rotation issue, maybe use another approach and don't set X and Y rotation to constant values 
         HandleRotation();
     }
-    private void HeadDummyMovement(Transform target)
-    {
-        if (target != null)
-        {
-            Vector3 dir = (target.position - headDummy.position).normalized;
-            Quaternion lookRot = Quaternion.LookRotation(dir, Vector3.up);
-            headDummy.rotation = Quaternion.Slerp(headDummy.rotation, lookRot, Time.deltaTime * 8f);
-        }
-    }
+    //private void HeadDummyMovement(Transform target)
+    //{
+    //    if (target != null)
+    //    {
+    //        Vector3 dir = (target.position - headDummy.position).normalized;
+    //        Quaternion lookRot = Quaternion.LookRotation(dir, Vector3.up);
+    //        headDummy.rotation = Quaternion.Slerp(headDummy.rotation, lookRot, Time.deltaTime * 8f);
+    //    }
+    //}
     private void HandleRotation()
     {
         Vector3 velocity = agent.velocity;
