@@ -2,10 +2,11 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using static UnityEngine.GraphicsBuffer;
+
 [RequireComponent(typeof(NavMeshAgent))]
 public class AntAICollecting : MonoBehaviour
 {
-    Transform targetResource;
+    //Transform targetResource;
     [SerializeField] Transform homeBase;
     Quaternion initialRotation;
     float collectionRange = 0.1f;
@@ -14,6 +15,7 @@ public class AntAICollecting : MonoBehaviour
     bool isCollecting = false;
     bool hasResource = false;
     float distanceToTarget;
+    int inventoryCapacity = 5;
 
     [Header("Resource Finding")]
     public float searchRefreshRate = 2f; // Co ile sekund szuka nowych zasobów
@@ -149,6 +151,14 @@ public class AntAICollecting : MonoBehaviour
 
         // Szukaj nastêpnego zasobu
         FindNearestResource();
+        //inventoryCapacity++;
+        //if (inventoryCapacity >= 5)
+        //{
+        //    hasResource = true;
+        //    Debug.Log("Inventory full, returning to base...");
+        //    ReturnToBase();
+        //    inventoryCapacity = 0;
+        //}
     }
 
     // METODA POMOCNICZA - Wywo³aj j¹ gdy dodajesz nowe zasoby do gry
