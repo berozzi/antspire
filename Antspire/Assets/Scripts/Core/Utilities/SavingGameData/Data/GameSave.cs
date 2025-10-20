@@ -25,6 +25,7 @@ public class GameSave
         enemies = new List<EnemyData>();
         structures = new List<StructureData>();
         roads = new List<RoadData>();
+        resources = new List<ResourceData>();
     }
 
     public PlayerData player;
@@ -32,6 +33,7 @@ public class GameSave
     public List<EnemyData> enemies;
     public List<StructureData> structures;
     public List<RoadData> roads;
+    public List<ResourceData> resources;
 
     public GameSave() { }
 }

@@ -9,6 +9,7 @@ public class StructureData
     public float y;
     public int level;
     public int capacity;
+    public bool isPlayerStructure = false;
     //public int IncrementID(int id)
     //{
     //    id = id + 1;

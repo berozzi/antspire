@@ -33,6 +33,7 @@ public class LoadSystem : MonoBehaviour
             Debug.Log("Game Loaded with New Input System!");
             Debug.Log(loadedGame.player.coins);
             Debug.Log(loadedGame.player.feromones);
+            Debug.Log(loadedGame.resources.Count);
         }
     }
 

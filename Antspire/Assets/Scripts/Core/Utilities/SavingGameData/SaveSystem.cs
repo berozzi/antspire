@@ -41,6 +41,17 @@ public class SaveSystem : MonoBehaviour
                 feromones = 300,
                 wisdomPoints = 5
             };
+            gameSave.resources.Add(new ResourceData()
+            {
+                id = System.Guid.NewGuid().ToString(),
+                resourceName = "Wood",
+                type = ResourceType.Wood,
+                x = 10,
+                y = 20,
+                value = 100,
+                isAvailable = true
+            });
+
             SaveGame(gameSave);
         }
     }
