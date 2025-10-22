@@ -6,9 +6,10 @@ public class DeleteStructure : MonoBehaviour
     InputAction deleteAction;
     GenerateVirtualGrid grid;
     [SerializeField] PlaceDownStructure placeDownStructure;
+    [SerializeField] HUDManager hudManager;
     private void Awake()
     {
-        deleteAction = new InputAction("RightClick", binding: "<Mouse>/leftButton");
+        deleteAction = new InputAction("Delete", binding: "<Mouse>/leftButton");
         grid = FindAnyObjectByType<GenerateVirtualGrid>();
         if (placeDownStructure == null)
         {
@@ -27,6 +28,11 @@ public class DeleteStructure : MonoBehaviour
     }
     private void OnDelete(InputAction.CallbackContext context)
     {
+        if  (hudManager != null && hudManager.isPaused)
+        {
+            // Nie usuwaj struktur, gdy gra jest wstrzymana
+            return;
+        }
         DeleteBuilding();
     }
     void DeleteBuilding()

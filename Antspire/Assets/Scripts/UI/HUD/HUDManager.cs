@@ -20,14 +20,6 @@ public class HUDManager : MonoBehaviour
     public bool isPaused = false;
     bool isInventoryOpen = false;
 
-    private InputAction menuAction;
-    private PlayerInput playerInput;
-
-    private void Awake()
-    {
-        // Utwórz akcjê dla klawisza Escape
-        playerInput = GetComponent<PlayerInput>();
-    }
 
     void Start()
     {

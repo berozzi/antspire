@@ -86,7 +86,6 @@ public class ResourceManager : MonoBehaviour
             resourceComp.Initialize(resourceData);
         }
     }
-
     Vector3 GetRandomMapPosition()
     {
         // Dostosuj do rozmiaru twojej mapy

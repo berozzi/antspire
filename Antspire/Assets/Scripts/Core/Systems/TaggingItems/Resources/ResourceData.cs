@@ -1,14 +1,16 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "New Resource", menuName = "Resources/Resource Data")]
-public class ResourceData : ScriptableObject
+[System.Serializable]
+public class ResourceData
 {
+    public string id; // Unique identifier
     public string resourceName;
+    public float x; // Position in the world
+    public float y;
     public ResourceType type; // Enum for easy identification
-    public int value;         // How much this resource is worth
-    public Sprite icon;
-    public GameObject resourcePrefab;
-    public Color resourceColor;
+    public int value;  // How much this resource is worth
+    public bool isAvailable; // Is it currently available in the world
+    //public GameObject resourcePrefab;
 }
 public enum ResourceType
 {

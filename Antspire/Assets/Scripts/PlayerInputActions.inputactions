@@ -1,0 +1,151 @@
+{
+    "version": 1,
+    "name": "PlayerInputActions",
+    "maps": [
+        {
+            "name": "GamePlay",
+            "id": "fd187eb1-b530-455a-82ab-7f0879f85b9b",
+            "actions": [
+                {
+                    "name": "MouseButton",
+                    "type": "Button",
+                    "id": "d179d5ee-a4eb-4188-9faf-2d82fba464fa",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "8416599b-7d21-4071-9bfe-fc6f3aaf6669",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "MouseButton",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
+            "name": "UI",
+            "id": "728c32d5-d998-400e-814f-cdc7fedff618",
+            "actions": [
+                {
+                    "name": "MouseButtonUI",
+                    "type": "Button",
+                    "id": "65472503-fc14-4689-8a59-8eaea6cbdb40",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "11431f70-ee33-4249-af8b-a22cdfd1d88d",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "MouseButtonUI",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
+            "name": "BuildMode",
+            "id": "fd1d93ae-1723-46a9-b234-f9079dfc45f8",
+            "actions": [
+                {
+                    "name": "PlaceStructure",
+                    "type": "Button",
+                    "id": "c692333a-392e-49ec-8038-63c04ee584aa",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "DeleteStructure",
+                    "type": "Button",
+                    "id": "14dcf219-fc9d-4768-8d1e-a264df1fed83",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "AwakeBuildMode",
+                    "type": "Button",
+                    "id": "44e93951-37c6-41e5-9af1-1b2b74ed67c9",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "AwakeDestroyMode",
+                    "type": "Button",
+                    "id": "ae5f6e9a-0441-4ea1-92bd-36f6b8283b38",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "31637480-5989-4899-9b14-dcbcbf4f14f4",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "PlaceStructure",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "21cfc4f4-ad99-4880-979b-4f8a218f0c1a",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "DeleteStructure",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "6f5d695d-0791-4b39-803b-24db57aec406",
+                    "path": "<Keyboard>/b",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "AwakeBuildMode",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "41e3583d-490d-41af-9558-e777e6a02456",
+                    "path": "<Keyboard>/n",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "AwakeDestroyMode",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}

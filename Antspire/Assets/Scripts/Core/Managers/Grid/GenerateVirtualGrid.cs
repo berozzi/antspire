@@ -3,6 +3,7 @@ using UnityEngine.UI;
 
 public class GenerateVirtualGrid : MonoBehaviour
 {
+    // siatke rozszerzymy póŸniej do rozmiaru 80x80 czyli ³¹cznie 6400 komórek 
     [SerializeField ]int width = 51;
     [SerializeField ]int height = 51; // because we start from 1 in loops
     float cellSize = 1f; // rozmiar pola w œwiecie

@@ -15,7 +15,7 @@ public class AntAICollecting : MonoBehaviour
     bool isCollecting = false;
     bool hasResource = false;
     float distanceToTarget;
-    int inventoryCapacity = 5;
+    //int inventoryCapacity = 5;
 
     [Header("Resource Finding")]
     public float searchRefreshRate = 2f; // Co ile sekund szuka nowych zasobów
@@ -179,17 +179,4 @@ public class AntAICollecting : MonoBehaviour
             // Optionally, you can add logic here to "drop off" the resource
         }
     }
-    //private System.Collections.IEnumerator CollectResource()
-    //{
-    //    Debug.Log("Collecting resource...");
-    //    isCollecting = true;
-    //    agent.isStopped = true;
-
-    //    yield return new WaitForSeconds(collectionTime);
-
-    //    hasResource = true;
-    //    isCollecting = false;
-    //    agent.isStopped = false;
-        
-    //}
 }
