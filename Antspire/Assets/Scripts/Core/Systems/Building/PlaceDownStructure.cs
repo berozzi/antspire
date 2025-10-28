@@ -1,14 +1,15 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlaceDownStructure : MonoBehaviour
 {
-    InputAction buildAction; // przypisz tê akcjê w inspektorze
-    GameObject structurePrefab; // Przypisz instancjê GameSave w inspektorze
+    InputAction buildAction; // przypisz tÄ™ akcjÄ™ w inspektorze
+    GameObject structurePrefab; // Przypisz instancjÄ™ GameSave w inspektorze
     GenerateVirtualGrid grid;
     HUDManager hudManager;
+    BuildingData buildingData;
     [SerializeField] private LayerMask groundLayerMask;
 
     [Header("Highlight Settings")]
@@ -20,7 +21,7 @@ public class PlaceDownStructure : MonoBehaviour
     private Vector2Int lastGridPos;
     private bool wasValidLastFrame = true;
 
-    // te dictionary bêdzie publiczne i dostêpne dla innych skryptów do sprawdzania zajêtoœci pozycji
+    // te dictionary bÄ™dzie publiczne i dostÄ™pne dla innych skryptÃ³w do sprawdzania zajÄ™toÅ›ci pozycji
     private void Awake()
     {
         buildAction = new InputAction(type: InputActionType.Button, binding: "<Mouse>/leftButton");
@@ -43,7 +44,7 @@ public class PlaceDownStructure : MonoBehaviour
         buildAction.performed -= OnBuild;
         buildAction.Disable();
 
-        // Ukryj podœwietlenie gdy skrypt jest wy³¹czony
+        // Ukryj podÅ›wietlenie gdy skrypt jest wyÅ‚Ä…czony
         if (currentHighlight != null)
         {
             currentHighlight.SetActive(false);
@@ -55,7 +56,7 @@ public class PlaceDownStructure : MonoBehaviour
         buildAction.Enable();
         buildAction.performed += OnBuild;
 
-        // Poka¿ podœwietlenie gdy skrypt jest w³¹czony
+        // PokaÅ¼ podÅ›wietlenie gdy skrypt jest wÅ‚Ä…czony
         if (currentHighlight != null)
         {
             currentHighlight.SetActive(true);
@@ -64,7 +65,7 @@ public class PlaceDownStructure : MonoBehaviour
 
     private void OnDestroy()
     {
-        // Posprz¹taj po sobie
+        // PosprzÄ…taj po sobie
         if (currentHighlight != null)
         {
             Destroy(currentHighlight);
@@ -84,10 +85,10 @@ public class PlaceDownStructure : MonoBehaviour
     }
     void PlaceBuilding()
     {
-        // Pobierz pozycjê myszy w œwiecie
+        // Pobierz pozycjÄ™ myszy w Å›wiecie
         Vector3 mousePos = GetMouseWorldPosition();
 
-        // Przyci¹gnij do gridu
+        // PrzyciÄ…gnij do gridu
         Vector3 gridPos = SnapBuildingToGrid(mousePos);
         Vector2Int gridCoord = grid.WorldToGrid(gridPos);
 
@@ -96,7 +97,7 @@ public class PlaceDownStructure : MonoBehaviour
             Debug.Log("Cannot place structure here, area is occupied.");
             return;
         }
-        // Stwórz budynek
+        // StwÃ³rz budynek
 
         Instantiate(structurePrefab, gridPos, Quaternion.identity);
         Debug.Log($"Placed structure at grid position: {gridCoord}");
@@ -105,7 +106,7 @@ public class PlaceDownStructure : MonoBehaviour
     }
     bool IsCellOccupied(Vector2Int gridCoord)
     {
-        // Zak³adaj¹c, ¿e masz dostêp do siatki i jej komórek
+        // ZakÅ‚adajÄ…c, Å¼e masz dostÄ™p do siatki i jej komÃ³rek
         Cell cell = grid.GetCell(gridCoord);
         Debug.Log($"Cell at {gridCoord} occupied state: {cell.isOccupied}");
         if (cell == null)
@@ -121,6 +122,7 @@ public class PlaceDownStructure : MonoBehaviour
         if (cell != null)
         {
             cell.isOccupied = occupied;
+            //buildingData = new BuildingData(gridCoord, BuildingType.House, 10, true);
             Debug.Log($"Cell at {gridCoord} occupied state changed to {occupied}.");
         }
     }
@@ -132,38 +134,57 @@ public class PlaceDownStructure : MonoBehaviour
         {
             Debug.Log("GameSave is null");
         }
-        // Utwórz nowy obiekt StructureData przed zapisaniem
+        // UtwÃ³rz nowy obiekt StructureData przed zapisaniem
         StructureData structureData = new StructureData()
         {
-            //id = IncrementID(id),  // Musisz mieæ system ID
+            //id = IncrementID(id),  // Musisz mieÄ‡ system ID
             type = structurePrefab.name, // lub pobierz z komponentu
             x = position.x,
             y = position.y,
-            level = 1, // domyœlny poziom
-            capacity = 10, // domyœlna pojemnoœæ
-            isPlayerStructure = true // lub false w zale¿noœci od logiki gry
+            level = 1, // domyÅ›lny poziom
+            capacity = 10, // domyÅ›lna pojemnoÅ›Ä‡
+            isPlayerStructure = true // lub false w zaleÅ¼noÅ›ci od logiki gry
         };
 
         // Dodaj do listy aktywnych struktur
         gameSave.structures.Add(structureData);
-        //Debug.Log($"Zapisano strukturê: {structureData.type} na pozycji ({position.x}, {position.y})");
+        //Debug.Log($"Zapisano strukturÄ™: {structureData.type} na pozycji ({position.x}, {position.y})");
     }
 
     Vector3 GetMouseWorldPosition()
     {
         Camera cam = Camera.main;
-        // punkt na "p³aszczyŸnie" kamery odpowiadaj¹cy kursorowi daleko od kamery
-        float depth = cam.orthographic ? cam.farClipPlane : 100f; // dla perspective: daj wystarczaj¹co du¿e depth
-        Vector3 origin = cam.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, depth));
-        Ray ray = new Ray(origin, cam.transform.forward * -1f); // w zale¿noœci od orientacji kamery mo¿esz potrzebowaæ -forward
+
+        if (cam == null)
+        {
+            Debug.LogError("Camera.main is null!");
+            return Vector3.zero;
+        }
+
+        // Unity ma wbudowanÄ… metodÄ™ do tego!
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+
+        // DEBUG: Zobacz ray w Scene view (czerwona linia)
+        Debug.DrawRay(ray.origin, ray.direction * 1000f, Color.red, 1f);
 
         RaycastHit hit;
         if (Physics.Raycast(ray, out hit, Mathf.Infinity, groundLayerMask))
         {
+            Debug.Log($"Raycast trafiÅ‚ w: {hit.point}");
             return hit.point;
         }
 
-        Debug.Log("Physics raycast nie trafi³.");
+        Debug.LogWarning($" Raycast nie trafiÅ‚! Layer mask: {groundLayerMask.value}");
+
+        // FALLBACK: przeciÄ™cie z pÅ‚aszczyznÄ… Y=0
+        float distance = -ray.origin.y / ray.direction.y;
+        if (distance > 0)
+        {
+            Vector3 fallbackPos = ray.origin + ray.direction * distance;
+            Debug.Log($"UÅ¼yto fallback position: {fallbackPos}");
+            return fallbackPos;
+        }
+
         return Vector3.zero;
     }
 
@@ -179,14 +200,14 @@ public class PlaceDownStructure : MonoBehaviour
         Vector3 gridPosHighlight = SnapBuildingToGrid(mousePosHighlight);
         Vector2Int gridCoordHighlight = grid.WorldToGrid(gridPosHighlight);
 
-        // SprawdŸ czy pozycja siê zmieni³a
+        // SprawdÅº czy pozycja siÄ™ zmieniÅ‚a
         if (gridCoordHighlight != lastGridPos || currentHighlight == null)
         {
             CreateOrUpdateHighlight(gridPosHighlight, gridCoordHighlight);
             lastGridPos = gridCoordHighlight;
         }
 
-        // Aktualizuj kolor na podstawie dostêpnoœci
+        // Aktualizuj kolor na podstawie dostÄ™pnoÅ›ci
         bool isValid = !IsCellOccupied(gridCoordHighlight);
         UpdateHighlightColor(isValid);
     }
@@ -198,7 +219,7 @@ public class PlaceDownStructure : MonoBehaviour
             CreateHighlightObject();
         }
 
-        // Ustaw pozycjê podœwietlenia
+        // Ustaw pozycjÄ™ podÅ›wietlenia
         currentHighlight.transform.position = worldPos;
 
         // Dopasuj rozmiar do twojego budynku
@@ -211,12 +232,12 @@ public class PlaceDownStructure : MonoBehaviour
         currentHighlight = GameObject.CreatePrimitive(PrimitiveType.Cube);
         currentHighlight.name = "BuildingHighlight";
 
-        // Usuñ collider ¿eby nie blokowa³ raycast
+        // UsuÅ„ collider Å¼eby nie blokowaÅ‚ raycast
         Destroy(currentHighlight.GetComponent<Collider>());
 
         highlightRenderer = currentHighlight.GetComponent<MeshRenderer>();
 
-        // Ustaw przezroczysty material domyœlnie
+        // Ustaw przezroczysty material domyÅ›lnie
         highlightRenderer.material = highlightMaterial;
     }
 
@@ -234,7 +255,7 @@ public class PlaceDownStructure : MonoBehaviour
     private float GetBuildingSize()
     {
         // Dostosuj rozmiar do twojego budynku
-        // Mo¿esz pobraæ z prefaba lub ustawiæ sta³¹
+        // MoÅ¼esz pobraÄ‡ z prefaba lub ustawiÄ‡ staÅ‚Ä…
         if (structurePrefab != null)
         {
             Renderer renderer = structurePrefab.GetComponent<Renderer>();
@@ -243,6 +264,7 @@ public class PlaceDownStructure : MonoBehaviour
                 return renderer.bounds.size.x * 0.9f; // 90% rozmiaru budynku
             }
         }
-        return 0.9f; // domyœlny rozmiar
+        return 0.9f; // domyÅ›lny rozmiar
     }
+    
 }
