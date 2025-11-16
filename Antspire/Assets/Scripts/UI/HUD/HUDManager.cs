@@ -1,3 +1,4 @@
+using System.IO;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -14,19 +15,18 @@ public class HUDManager : MonoBehaviour
     [Header("Inventory References")]
     public GameObject inventoryPanel;
 
-    [Header("Minimap References")]
-    public GameObject minimap;
 
     public bool isPaused = false;
     bool isInventoryOpen = false;
 
+    string customPath = "C:\\Users\\GracjanCode\\Desktop\\Ants\\Saves\\gameSave.json";
 
     void Start()
     {
         // Upewnij siê, ¿e HUD zaczyna w odpowiednim stanie
         CloseAllPanels();
         menuButton.SetActive(true);
-        minimap.SetActive(true);
+        inventoryPanel.SetActive(true);
     }
 
     // Menu Methods
@@ -46,7 +46,7 @@ public class HUDManager : MonoBehaviour
     {
         isPaused = false;
         menuPanel.SetActive(false);
-        minimap.SetActive(true);
+        inventoryPanel.SetActive(true);
         Time.timeScale = 1f;
     }
 
@@ -54,13 +54,58 @@ public class HUDManager : MonoBehaviour
     {
         isPaused = true;
         menuPanel.SetActive(true);
-        minimap.SetActive(false);
+        inventoryPanel.SetActive(false);
         Time.timeScale = 0f;
     }
     public void SaveGame()
     {
         // Tutaj dodaj logikê zapisywania gry
-        Debug.Log("Gra zapisana!");
+        GameSave gameSave = GameSave.Instance;
+       
+        if (gameSave != null) 
+        {
+            gameSave.player = new PlayerData()
+            {
+                coins = 70000,
+                feromones = 5678,
+                wisdomPoints = 1234
+            };
+            //gameSave.resources.Add(new ResourceData()
+            //{
+            //    id = System.Guid.NewGuid().ToString(),
+            //    resourceName = "Wood",
+            //    type = ResourceType.Wood,
+            //    x = 10,
+            //    y = 20,
+            //    value = 100,
+            //    isAvailable = true
+            //});
+
+            SaveGameToFile(gameSave);
+        }
+    }
+    private void SaveGameToFile(GameSave gameSave)
+    {
+        string json = JsonUtility.ToJson(gameSave, true);
+        File.WriteAllText(customPath, json);
+        Debug.Log("Game Saved with New Input System!");
+    }
+
+    public void LoadGame()
+    {
+        // Tutaj dodaj logikê ³adowania gry
+        if (File.Exists(customPath))
+        {
+            string json = File.ReadAllText(customPath);
+            GameSave loadedGameSave = JsonUtility.FromJson<GameSave>(json);
+            GameSave.Instance.player = loadedGameSave.player;
+            GameSave.Instance.resources = loadedGameSave.resources;
+            Debug.Log("Game Loaded with New Input System!");
+        }
+        else
+        {
+            Debug.LogWarning("No save file found at: " + customPath);
+        }
     }
 
     public void LeaveGame()
@@ -86,18 +131,6 @@ public class HUDManager : MonoBehaviour
     {
         isInventoryOpen = !isInventoryOpen;
         inventoryPanel.SetActive(isInventoryOpen);
-    }
-
-    public void ShowInventory()
-    {
-        isInventoryOpen = true;
-        inventoryPanel.SetActive(true);
-    }
-
-    public void HideInventory()
-    {
-        isInventoryOpen = false;
-        inventoryPanel.SetActive(false);
     }
 
     private void CloseAllPanels()

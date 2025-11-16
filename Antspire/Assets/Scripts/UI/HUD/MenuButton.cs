@@ -38,6 +38,9 @@ public class MenuButton : MonoBehaviour
                 case string name when name.Contains("Cancel"):
                     button.onClick.AddListener(hudManager.HideObjectInfo);
                     break;
+                case string name when name.Contains("Load"):
+                    button.onClick.AddListener(hudManager.LoadGame);
+                    break;
             }
         }
     }
