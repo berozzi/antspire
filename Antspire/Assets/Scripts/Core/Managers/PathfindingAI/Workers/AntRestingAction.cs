@@ -30,7 +30,7 @@ public partial class AntRestingAction : Action
     {
         agent.isStopped = true; // Stop movement while resting
         timer += Time.deltaTime;
-        UnityEngine.Debug.Log($"Ant is resting: {timer}/{RestTime.Value} seconds");
+        //UnityEngine.Debug.Log($"Ant is resting: {timer}/{RestTime.Value} seconds");
         if (timer >= RestTime.Value)
         { // Resume movement after resting
             agent.isStopped = false;

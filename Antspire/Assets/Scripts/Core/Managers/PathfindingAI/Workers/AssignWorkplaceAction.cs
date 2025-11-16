@@ -48,7 +48,7 @@ public partial class AssignWorkplaceAction : Action
         {
             Workplace.Value = closestWorkplace.gameObject;
             HasWorkplace.Value = true;
-            Debug.Log($"{Self.Value.name} znalazł miejsce pracy: {closestWorkplace.name}");
+            Debug.Log($"{Self.Value.name} znalazł miejsce pracy: {closestWorkplace.WorkplaceName}");
             return Status.Success;
         }
         else

@@ -14,10 +14,11 @@ public partial class GoToWorkAction : Action
     [SerializeReference] public BlackboardVariable<float> WorkDuration;
 
     NavMeshAgent agent;
-    float workTimer = 0f;
+    float workTimer;
 
     protected override Status OnStart()
     {
+        workTimer = 0f;
         agent = Self.Value.GetComponent<NavMeshAgent>();
         if (agent == null)
         {
@@ -30,17 +31,28 @@ public partial class GoToWorkAction : Action
     {
         if (Self == null || Workplace == null) return Status.Failure;
         agent.SetDestination(Workplace.Value.transform.position);
-        workTimer += Time.deltaTime;
-        if (Vector3.Distance(Self.Value.transform.position, Workplace.Value.transform.position) < 3f)
+        
+        float distanceToWorkplace = Vector3.Distance(Self.Value.transform.position, Workplace.Value.transform.position);
+
+        if (distanceToWorkplace >= 3f)
         {
+            // Still traveling
+            agent.SetDestination(Workplace.Value.transform.position);
+            return Status.Running;
+        }
+        else
+        {
+            // Arrived at workplace - now work
+            agent.isStopped = true;
+            workTimer += Time.deltaTime;
+
             if (workTimer < WorkDuration.Value)
             {
-                UnityEngine.Debug.Log($"[GoToWorkAction] {Self.Value.name} is working: {workTimer}/{WorkDuration.Value} seconds");
+                Debug.Log($"Working: {workTimer}/{WorkDuration.Value}");
                 return Status.Running;
             }
             return Status.Success;
         }
-        return Status.Running;
     }
 
     protected override void OnEnd()
