@@ -5,6 +5,7 @@ public class InventoryButtons : MonoBehaviour
 {
     private Button button;
     [SerializeField] GameState gameState;
+    [SerializeField] GameplayCanvasManager gameplayCanvasManager;
 
     void Start()
     {
@@ -13,7 +14,7 @@ public class InventoryButtons : MonoBehaviour
         if (gameState == null)
         {
             gameState = FindAnyObjectByType<GameState>();
-            Debug.LogError("GameplayCanvasManager not found in the scene.", this);
+            Debug.LogError("GameState not found in the scene.", this);
         }
         if (button == null)
         {
@@ -25,15 +26,21 @@ public class InventoryButtons : MonoBehaviour
             switch (gameObject.name)
             {
                 case string name when name.Contains("Slot1"):
-                    button.onClick.AddListener(gameState.ToggleTechTree);
+                    button.onClick.AddListener(() => gameState.TogglePanel(GameStates.TechTree));
                     break;
 
                 case string name when name.Contains("Slot2"):
-                    button.onClick.AddListener(gameState.ToggleWarPanel);
+                    button.onClick.AddListener(() => gameState.TogglePanel(GameStates.WarPanel));
                     break;
 
                 case string name when name.Contains("Slot3"):
-                    // oteorzenie menu z strukturasmi budowlanymi
+                    button.onClick.AddListener(() => gameState.TogglePanel(GameStates.InStructureMenu));
+                    // otworzenie menu z strukturasmi budowlanymi
+                    break;
+
+                case string name when name.Contains("Slot4"):
+                    button.onClick.AddListener(() => gameState.TogglePanel(GameStates.DestroyMode));
+                    // otworzenie menu z narzedziami do niszczenia struktur
                     break;
             }
         }
