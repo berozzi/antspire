@@ -9,8 +9,7 @@ public class PlaceDownStructure : MonoBehaviour
     GameObject structurePrefab; // Przypisz instancję GameSave w inspektorze
     GenerateVirtualGrid grid;
     HUDManager hudManager;
-    BuildingData buildingData;
-    [SerializeField] private LayerMask groundLayerMask;
+    LayerMask groundLayerMask;
 
     [Header("Highlight Settings")]
     [SerializeField] private Material highlightMaterial;
@@ -21,12 +20,13 @@ public class PlaceDownStructure : MonoBehaviour
     private Vector2Int lastGridPos;
     private bool wasValidLastFrame = true;
 
-    // te dictionary będzie publiczne i dostępne dla innych skryptów do sprawdzania zajętości pozycji
+   
     private void Awake()
     {
         buildAction = new InputAction(type: InputActionType.Button, binding: "<Mouse>/leftButton");
         grid = FindAnyObjectByType<GenerateVirtualGrid>();
         hudManager = FindAnyObjectByType<HUDManager>();
+        groundLayerMask = LayerMask.GetMask("Ground");
     }
     public void SetStructurePrefab(GameObject prefab)
     {
@@ -75,7 +75,7 @@ public class PlaceDownStructure : MonoBehaviour
     {
         if (structurePrefab == null)
         {
-            Debug.LogError("Assign the structure which you want to build.");
+            Debug.LogError("structurePrefab is not assigned. Should be assigned later, in SelectStructure");
         }
     }
     private void OnBuild(InputAction.CallbackContext context)
@@ -86,7 +86,12 @@ public class PlaceDownStructure : MonoBehaviour
     void PlaceBuilding()
     {
         // Pobierz pozycję myszy w świecie
-        Vector3 mousePos = GetMouseWorldPosition();
+        var (success, mousePos) = GetMouseWorldPosition();
+        if (!success)
+        {
+            Debug.Log("❌ Kliknięto poza Ground, nie stawiam budynku.");
+            return;
+        }
 
         // Przyciągnij do gridu
         Vector3 gridPos = SnapBuildingToGrid(mousePos);
@@ -108,102 +113,63 @@ public class PlaceDownStructure : MonoBehaviour
     {
         // Zakładając, że masz dostęp do siatki i jej komórek
         Cell cell = grid.GetCell(gridCoord);
-        Debug.Log($"Cell at {gridCoord} occupied state: {cell.isOccupied}");
         if (cell == null)
         {
             Debug.LogError($"Cell at {gridCoord} is null.");
+            
         }
         return cell != null && cell.isOccupied;
     }
-
+    // zmiana stanu zajętości komórki
     public void ChangeOccupiedState(Vector2Int gridCoord, bool occupied)
     {
         Cell cell = grid.GetCell(gridCoord);
         if (cell != null)
         {
             cell.isOccupied = occupied;
-            //buildingData = new BuildingData(gridCoord, BuildingType.House, 10, true);
-            Debug.Log($"Cell at {gridCoord} occupied state changed to {occupied}.");
         }
     }
-
-    void SaveStructureData(Vector3 position)
-    {
-        GameSave gameSave = GameSave.Instance;
-        if (gameSave == null)
-        {
-            Debug.Log("GameSave is null");
-        }
-        // Utwórz nowy obiekt StructureData przed zapisaniem
-        StructureData structureData = new StructureData()
-        {
-            //id = IncrementID(id),  // Musisz mieć system ID
-            type = structurePrefab.name, // lub pobierz z komponentu
-            x = position.x,
-            y = position.y,
-            level = 1, // domyślny poziom
-            capacity = 10, // domyślna pojemność
-            isPlayerStructure = true // lub false w zależności od logiki gry
-        };
-
-        // Dodaj do listy aktywnych struktur
-        gameSave.structures.Add(structureData);
-        //Debug.Log($"Zapisano strukturę: {structureData.type} na pozycji ({position.x}, {position.y})");
-    }
-
-    Vector3 GetMouseWorldPosition()
+    // zbieranie pozycji w świecie pod myszką za pomocą raycasta, ten bool na początku i Vector3 to tuple, funckja zwraca dwie wartości bool i vector3
+    public (bool success, Vector3 point) GetMouseWorldPosition()
     {
         Camera cam = Camera.main;
-
         if (cam == null)
         {
             Debug.LogError("Camera.main is null!");
-            return Vector3.zero;
+            return (false, Vector3.zero);
         }
 
-        // Unity ma wbudowaną metodę do tego!
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
 
-        // DEBUG: Zobacz ray w Scene view (czerwona linia)
-        Debug.DrawRay(ray.origin, ray.direction * 1000f, Color.red, 1f);
-
-        RaycastHit hit;
-        if (Physics.Raycast(ray, out hit, Mathf.Infinity, groundLayerMask))
+        if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, groundLayerMask))
         {
-            Debug.Log($"Raycast trafił w: {hit.point}");
-            return hit.point;
+            return (true, hit.point);
         }
 
-        Debug.LogWarning($" Raycast nie trafił! Layer mask: {groundLayerMask.value}");
-
-        // FALLBACK: przecięcie z płaszczyzną Y=0
-        float distance = -ray.origin.y / ray.direction.y;
-        if (distance > 0)
-        {
-            Vector3 fallbackPos = ray.origin + ray.direction * distance;
-            Debug.Log($"Użyto fallback position: {fallbackPos}");
-            return fallbackPos;
-        }
-
-        return Vector3.zero;
+        return (false, Vector3.zero);
     }
-
+    // funkcja przyciągająca budynek do siatki
     public Vector3 SnapBuildingToGrid(Vector3 worldPos)
     {
         Vector2Int gridCoord = grid.WorldToGrid(worldPos);
         return grid.GridToWorld(gridCoord);
     }
-
+    // aktualizacja podświetlenia pod budową budynku
     private void UpdateHighlight()
     {
-        Vector3 mousePosHighlight = GetMouseWorldPosition();
+        var (success, mousePosHighlight) = GetMouseWorldPosition();
+        if (!success)
+        {
+            Debug.Log("❌ Kliknięto poza Ground, nie stawiam budynku.");
+            return;
+        }
         Vector3 gridPosHighlight = SnapBuildingToGrid(mousePosHighlight);
         Vector2Int gridCoordHighlight = grid.WorldToGrid(gridPosHighlight);
 
         // Sprawdź czy pozycja się zmieniła
         if (gridCoordHighlight != lastGridPos || currentHighlight == null)
         {
-            CreateOrUpdateHighlight(gridPosHighlight, gridCoordHighlight);
+            CreateOrUpdateHighlight(gridPosHighlight);
             lastGridPos = gridCoordHighlight;
         }
 
@@ -211,8 +177,8 @@ public class PlaceDownStructure : MonoBehaviour
         bool isValid = !IsCellOccupied(gridCoordHighlight);
         UpdateHighlightColor(isValid);
     }
-
-    private void CreateOrUpdateHighlight(Vector3 worldPos, Vector2Int gridCoord)
+    // stworzenie highlightu lub jego aktualizacja
+    private void CreateOrUpdateHighlight(Vector3 worldPos)
     {
         if (currentHighlight == null)
         {
@@ -226,7 +192,7 @@ public class PlaceDownStructure : MonoBehaviour
         float buildingSize = GetBuildingSize();
         currentHighlight.transform.localScale = new Vector3(buildingSize, 0.1f, buildingSize);
     }
-
+    // stworzenie obiektu podświetlenia Cube'a
     private void CreateHighlightObject()
     {
         currentHighlight = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -266,5 +232,29 @@ public class PlaceDownStructure : MonoBehaviour
         }
         return 0.9f; // domyślny rozmiar
     }
-    
+
+    // Zapisz dane struktury do GameSave
+    void SaveStructureData(Vector3 position)
+    {
+        GameSave gameSave = GameSave.Instance;
+        if (gameSave == null)
+        {
+            Debug.Log("GameSave is null");
+        }
+        // Utwórz nowy obiekt StructureData przed zapisaniem
+        StructureData structureData = new StructureData()
+        {
+            //id = IncrementID(id),  // Musisz mieć system ID
+            type = structurePrefab.name, // lub pobierz z komponentu
+            x = position.x,
+            y = position.y,
+            level = 1, // domyślny poziom
+            capacity = 10, // domyślna pojemność
+            isPlayerStructure = true // lub false w zależności od logiki gry
+        };
+
+        // Dodaj do listy aktywnych struktur
+        gameSave.structures.Add(structureData);
+        //Debug.Log($"Zapisano strukturę: {structureData.type} na pozycji ({position.x}, {position.y})");
+    }
 }

@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class DeleteStructure : MonoBehaviour
@@ -37,32 +37,77 @@ public class DeleteStructure : MonoBehaviour
     }
     void DeleteBuilding()
     {
-        // Pobierz pozycjê myszy w œwiecie
-        Camera cam = Camera.main;
-        // punkt na "p³aszczyŸnie" kamery odpowiadaj¹cy kursorowi daleko od kamery
-        float depth = cam.orthographic ? cam.farClipPlane : 100f; // dla perspective: daj wystarczaj¹co du¿e depth
-        Vector3 origin = cam.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, depth));
-        Ray ray = new Ray(origin, cam.transform.forward * -1f); // w zale¿noœci od orientacji kamery mo¿esz potrzebowaæ -forward
+        // UÅ¼yj tej samej metody co w PlaceBuilding
+        var (success, mouseWorldPos) = placeDownStructure.GetMouseWorldPosition();
 
-        int layerMask = ~LayerMask.GetMask("Ground"); // ignoruj warstwê Ground
+        // JeÅ›li klikniÄ™cie nie trafiÅ‚o w layer Ground â€” anuluj
+        if (!success)
+        {
+            Debug.Log("KlikniÄ™to poza Ground â€“ nie usuwam.");
+            return;
+        }
+
+        Camera cam = Camera.main;
+        if (cam == null)
+        {
+            Debug.LogError("Camera.main is null!");
+            return;
+        }
+
+        // RzuÄ‡ ray od kamery przez myszkÄ™
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+
+        // Ignoruj layer Ground â€” chcemy trafiÄ‡ obiekt stojÄ…cy NA ziemi
+        int layerMask = ~LayerMask.GetMask("Ground");
         RaycastHit hit;
+
         if (Physics.Raycast(ray, out hit, Mathf.Infinity, layerMask))
         {
             GameObject hitObject = hit.collider.gameObject;
-            Vector3 buildingWorldPos = hitObject.transform.position;
 
-            // U¯YJ TEJ SAMEJ KONWERSJI CO W PLACEBUILDING!
-            Vector2Int gridCoord = grid.WorldToGrid(buildingWorldPos);
-            
-            if (placeDownStructure == null)
+            // Dla bezpieczeÅ„stwa â€” jeÅ›li z jakiegoÅ› powodu klikniesz Ground mimo maski
+            if (hitObject.layer == LayerMask.NameToLayer("Ground"))
             {
-                Debug.LogError("PlaceDownStructure reference is missing in DeleteStructure script.", this);
+                Debug.Log("KlikniÄ™to Ground â€“ brak obiektu do usuniÄ™cia.");
                 return;
             }
-            // Zmieñ stan komórki na nie zajêt¹
+
+            Vector3 buildingWorldPos = hitObject.transform.position;
+            Vector2Int gridCoord = grid.WorldToGrid(buildingWorldPos);
+
+            if (placeDownStructure == null)
+            {
+                Debug.LogError(" Brakuje referencji do placeDownStructure w DeleteBuilding.", this);
+                return;
+            }
+
+            // ZmieÅ„ stan komÃ³rki na wolnÄ… (jeÅ›li istniaÅ‚a)
             placeDownStructure.ChangeOccupiedState(gridCoord, false);
+            RemoveStructureFromSave(hitObject.transform.position);
+            // UsuÅ„ obiekt
             Destroy(hitObject);
-            Debug.Log($"Deleted structure at grid position: {gridCoord}");
+            Debug.Log($" UsuniÄ™to obiekt z koliderem na pozycji siatki: {gridCoord}");
+        }
+        else
+        {
+            Debug.Log("Nie trafiono Å¼adnego obiektu z koliderem do usuniÄ™cia.");
+        }
+    }
+    public void RemoveStructureFromSave(Vector3 exactPosition)
+    {
+        GameSave gameSave = GameSave.Instance;
+        if (gameSave == null) return;
+
+        // Szukaj dokÅ‚adnie na tej pozycji (bez tolerancji, bo masz raycast)
+        StructureData structureToRemove = gameSave.structures.Find(s =>
+            Mathf.Approximately(s.x, exactPosition.x) &&
+            Mathf.Approximately(s.y, exactPosition.y)
+        );
+
+        if (structureToRemove != null)
+        {
+            gameSave.structures.Remove(structureToRemove);
+            Debug.Log($"UsuniÄ™to z zapisu: {structureToRemove.type} na ({exactPosition.x:F2}, {exactPosition.y:F2})");
         }
     }
 }
