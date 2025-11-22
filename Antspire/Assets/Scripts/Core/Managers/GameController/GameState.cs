@@ -3,9 +3,11 @@ public enum GameStates
 {
     InGame,
     Paused,
-    Inventory,
     BuildMode,
-    DestroyMode
+    DestroyMode,
+    TechTree,
+    WarPanel,
+    InStructureMenu
 }
 public class GameState : MonoBehaviour
 {
@@ -13,149 +15,136 @@ public class GameState : MonoBehaviour
     [SerializeField] PlaceDownStructure placeDownStructure;
     [SerializeField] DeleteStructure deleteStructure;
     [SerializeField] HUDManager hudManager;
+    [SerializeField] GameplayCanvasManager gameplayCanvasManager;
 
     [Header("Test Structure Selection")]
-    [SerializeField] GameObject testStructurePrefab;
-    // Update is called once per frame
+    [SerializeField] GameObject structurePrefab;
+    
     [Header("Input Settings")]
     [SerializeField] KeyCode buildModeKey = KeyCode.B;
     [SerializeField] KeyCode destroyModeKey = KeyCode.N;
     [SerializeField] KeyCode exitModesKey = KeyCode.Escape;
+
+    // Eventy dla UI
+    public event System.Action<bool> OnTechTreeToggled;
+    public event System.Action<bool> OnWarPanelToggled;
+    public event System.Action<bool> OnStructureMenuToggled;
     void Awake()
     {
-        if (placeDownStructure == null)
-        {
-            Debug.LogError("PlaceDownStructure not assigned! Finding object by this type", this);
-            placeDownStructure = FindAnyObjectByType<PlaceDownStructure>();
-        }
-        if (deleteStructure == null)
-        {
-            Debug.LogError("DeleteStructure not assigned! Finding object by this type", this);
-            deleteStructure = FindAnyObjectByType<DeleteStructure>();
-        }
-        if (hudManager == null)
-        {
-            Debug.LogError("HUDManager not assigned! Finding object by this type", this);
-            hudManager = FindAnyObjectByType<HUDManager>();
-        }
+        FindMissingReferences();
     }
-    void Start()
-    {
-        ApplyTestStructure();
-    }
+
+    void Start() {}
+
     void Update()
     {
-        UpdateStructureStates();
+        UpdateComponentsStates();
         HandleInput();
+    }
+
+    private void FindMissingReferences()
+    {
+        if (placeDownStructure == null)
+            placeDownStructure = FindAnyObjectByType<PlaceDownStructure>();
+        if (deleteStructure == null)
+            deleteStructure = FindAnyObjectByType<DeleteStructure>();
+        if (hudManager == null)
+            hudManager = FindAnyObjectByType<HUDManager>();
+        if (gameplayCanvasManager == null)
+            gameplayCanvasManager = FindAnyObjectByType<GameplayCanvasManager>();
     }
 
     private void HandleInput()
     {
-        // Klawisz B - Tryb budowania
         if (Input.GetKeyDown(buildModeKey))
-        {
-            ToggleBuildMode();
-        }
+            TogglePanel(GameStates.BuildMode);
 
-        // Klawisz N - Tryb niszczenia
         if (Input.GetKeyDown(destroyModeKey))
-        {
-            ToggleDestroyMode();
-        }
+            TogglePanel(GameStates.DestroyMode);
 
-        // Escape - Wyjœcie z trybów
         if (Input.GetKeyDown(exitModesKey))
-        {
             HandleEscapeKey();
-        }
     }
 
-    private void ToggleBuildMode()
-    {
-        if (CurrentGameState == GameStates.BuildMode)
-        {
-            // Jeœli ju¿ jesteœmy w trybie budowania, wróæ do gry
-            SetGameState(GameStates.InGame);
-        }
-        else
-        {
-            // Prze³¹cz do trybu budowania
-            SetGameState(GameStates.BuildMode);
-        }
+    public void TogglePanel(GameStates current)
+    {     
+        SetGameState(CurrentGameState == current ? GameStates.InGame : current);
     }
 
-    private void ToggleDestroyMode()
-    {
-        if (CurrentGameState == GameStates.DestroyMode)
-        {
-            // Jeœli ju¿ jesteœmy w trybie niszczenia, wróæ do gry
-            SetGameState(GameStates.InGame);
-        }
-        else
-        {
-            // Prze³¹cz do trybu niszczenia
-            SetGameState(GameStates.DestroyMode);
-        }
-    }
     private void HandleEscapeKey()
     {
         switch (CurrentGameState)
         {
             case GameStates.InGame:
-                // W normalnej grze - otwórz menu
                 hudManager.ToggleMenu();
                 break;
-
             case GameStates.BuildMode:
+                SetGameState(GameStates.InStructureMenu);
+                break;
+            case GameStates.InStructureMenu:
             case GameStates.DestroyMode:
-                // W trybach specjalnych - wyjdŸ z trybu
-                ExitSpecialModes();
+            case GameStates.TechTree:
+            case GameStates.WarPanel:
+                SetGameState(GameStates.InGame);
                 break;
-
-            case GameStates.Paused:
-                // W menu - zamknij menu (lub nic nie rób jeœli HUDManager ju¿ to obs³uguje)
-                // Mo¿esz zostawiæ puste lub wywo³aæ CloseMenu()
-                break;
-        }
-    }
-    private void ExitSpecialModes()
-    {
-        // Escape zawsze wraca do normalnego trybu gry
-        if (CurrentGameState != GameStates.InGame)
-        {
-            SetGameState(GameStates.InGame);
         }
     }
 
     private void SetGameState(GameStates newState)
     {
+        if (CurrentGameState == newState) return;
+
         GameStates previousState = CurrentGameState;
         CurrentGameState = newState;
 
-        Debug.Log($"GameState changed: {previousState} -> {newState}");
+        // Wywo³aj eventy przy zmianie stanu
+        HandleStateChangeEvents(previousState, newState);
 
-        // Opcjonalnie: wywo³aj eventy jeœli potrzebujesz
-        // GameEvents.OnGameStateChanged?.Invoke(newState);
+        // Mo¿esz te¿ dodaæ aktualizacjê UI
+        //if (gameplayCanvasManager != null)
+        //    gameplayCanvasManager.OnGameStateChanged(previousState, newState);
+
+        Debug.Log($"GameState changed: {previousState} -> {newState}");
     }
-    private void UpdateStructureStates()
+
+    private void HandleStateChangeEvents(GameStates previousState, GameStates newState)
     {
-        bool shouldBeActive = !hudManager.isPaused; // Sprawdza czy gra nie jest w pauzie
+        // TechTree events
+        if (previousState == GameStates.TechTree && newState != GameStates.TechTree)
+            OnTechTreeToggled?.Invoke(false);
+        else if (newState == GameStates.TechTree && previousState != GameStates.TechTree)
+            OnTechTreeToggled?.Invoke(true);
+
+        // WarPanel events
+        if (previousState == GameStates.WarPanel && newState != GameStates.WarPanel)
+            OnWarPanelToggled?.Invoke(false);
+        else if (newState == GameStates.WarPanel && previousState != GameStates.WarPanel)
+            OnWarPanelToggled?.Invoke(true);
+
+        // StructureMenu events
+        if (previousState == GameStates.InStructureMenu && newState != GameStates.InStructureMenu)
+            OnStructureMenuToggled?.Invoke(false);
+        else if (newState == GameStates.InStructureMenu && previousState != GameStates.InStructureMenu)
+            OnStructureMenuToggled?.Invoke(true);
+    }
+
+    private void UpdateComponentsStates()
+    {
+        bool shouldBeActive = !hudManager.isPaused;
 
         if (placeDownStructure != null)
             placeDownStructure.enabled = CurrentGameState == GameStates.BuildMode && shouldBeActive;
-        
+
         if (deleteStructure != null)
             deleteStructure.enabled = CurrentGameState == GameStates.DestroyMode && shouldBeActive;
-
-        // te dwa if-y sprawdzaj¹ czy komponenty nie s¹ null, zanim spróbuj¹ ustawiæ ich stan enabled
-        // oraz kiedy bêd¹ mia³y nadaæ im enabled to równie¿ sprawdzaj¹ czy gra nie jest w pauzie (shouldBeActive), && - dziêki temu siê to dzieje
-
     }
-    void ApplyTestStructure()
+
+    public void SetPrefab(GameObject prefab)
     {
-        if (testStructurePrefab != null && placeDownStructure != null)
+        structurePrefab = prefab;
+        if (placeDownStructure != null && structurePrefab != null)
         {
-            placeDownStructure.SetStructurePrefab(testStructurePrefab);
+            placeDownStructure.SetStructurePrefab(structurePrefab);
         }
     }
 }
