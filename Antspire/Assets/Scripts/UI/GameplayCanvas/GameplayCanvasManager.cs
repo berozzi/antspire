@@ -6,6 +6,8 @@ public class GameplayCanvasManager : MonoBehaviour
     [SerializeField] GameObject techTreePanel;
     [SerializeField] GameObject warPanel;
     [SerializeField] GameState gameState;
+    [SerializeField] GameObject structureMenuPanel;
+    [SerializeField] GameObject structureCommonMenu;
 
     private void Awake()
     {
@@ -15,6 +17,7 @@ public class GameplayCanvasManager : MonoBehaviour
         {
             gameState.OnTechTreeToggled += OnTechTreeToggled;
             gameState.OnWarPanelToggled += OnWarPanelToggled;
+            gameState.OnStructureMenuToggled += OnStructureMenuToggled;
         }
     }
 
@@ -24,6 +27,7 @@ public class GameplayCanvasManager : MonoBehaviour
         {
             gameState.OnTechTreeToggled -= OnTechTreeToggled;
             gameState.OnWarPanelToggled -= OnWarPanelToggled;
+            gameState.OnStructureMenuToggled -= OnStructureMenuToggled;
         }
     }
 
@@ -43,5 +47,39 @@ public class GameplayCanvasManager : MonoBehaviour
         // Automatycznie zamknij inne panele
         if (isOpen && techTreePanel.activeSelf)
             techTreePanel.SetActive(false);
+    }
+    private void OnStructureMenuToggled(bool isOpen)
+    {
+        if (isOpen)
+        {
+            structureMenuPanel.SetActive(true);
+        }
+        else
+        {
+            structureMenuPanel.SetActive(false);
+            CloseAllSubpanels();
+        }
+    }
+
+    public void ToggleCommonStructures()
+    {
+        structureCommonMenu.SetActive(!structureCommonMenu.activeSelf);
+    }
+    public void ToggleHealthStructures()
+    {
+        Debug.Log("Toggling Health Structures Panel");
+        // Implementacja dla panelu struktur zdrowotnych
+    }
+
+    public void CloseAllPanels()
+    {
+        techTreePanel.SetActive(false);
+        warPanel.SetActive(false);
+    }
+
+    public void CloseAllSubpanels()
+    {
+        structureCommonMenu.SetActive(false);
+        // Dodaj tutaj zamykanie innych podpaneli, jeœli istniej¹
     }
 }
