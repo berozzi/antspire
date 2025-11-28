@@ -29,6 +29,10 @@ public class StructureCategoriesSelect : MonoBehaviour
             case string name when name.Contains("Health"):
                 button.onClick.AddListener(gameplayCanvasManager.ToggleHealthStructures);
                 break;
+
+            case string name when name.Contains("Tunnels"):
+                button.onClick.AddListener(gameplayCanvasManager.ToggleTunnelMenu);
+                break;
         }
     }
 }
