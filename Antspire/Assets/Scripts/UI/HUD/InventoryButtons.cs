@@ -42,6 +42,10 @@ public class InventoryButtons : MonoBehaviour
                     button.onClick.AddListener(() => gameState.TogglePanel(GameStates.DestroyMode));
                     // otworzenie menu z narzedziami do niszczenia struktur
                     break;
+                //case string name when name.Contains("Slot5"):
+                //    button.onClick.AddListener(() => gameState.TogglePanel(GameStates.QueenShop));
+                //    // otworzenie sklepu krolewskiego
+                //    break;
             }
         }
     }

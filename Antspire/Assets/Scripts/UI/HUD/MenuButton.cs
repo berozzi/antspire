@@ -5,16 +5,18 @@ public class MenuButton : MonoBehaviour
 {
     private Button button;
     private HUDManager hudManager;
+    [SerializeField] SaveManager saveManager;
 
     void Start()
     {
         button = GetComponent<Button>();
         hudManager = FindAnyObjectByType<HUDManager>();
+        saveManager = FindAnyObjectByType<SaveManager>();
         if (button == null)
         {
             Debug.LogError("MenuButton script requires a Button component on the same GameObject.", this);
         }
-        if (button != null && hudManager != null)
+        if (button != null && hudManager != null && saveManager != null)
         {
             // Przypisz odpowiednie metody w zale¿noœci od nazwy przycisku
             switch (gameObject.name)
@@ -28,7 +30,7 @@ public class MenuButton : MonoBehaviour
                     break;
 
                 case string name when name.Contains("Save"):
-                    button.onClick.AddListener(hudManager.SaveGame);
+                    button.onClick.AddListener(saveManager.SaveGame);
                     break;
 
                 case string name when name.Contains("Leave"):
