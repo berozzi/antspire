@@ -143,11 +143,11 @@ public class PheromoneManager : MonoBehaviour
                 if (totalPassiveIncome > 0)
                 {
                     AddPheromones(totalPassiveIncome, "Pasywny dochÛd");
-
-                    if (enableLogs)
-                    {
-                        Log($"Pasywny dochÛd: {totalPassiveIncome}/s èrÛd≥a: {string.Join(", ", activeSources)}");
-                    }
+                    // debug logs sπ zakomentowane, aby uniknπÊ nadmiernego logowania
+                    //if (enableLogs)
+                    //{
+                    //    Log($"Pasywny dochÛd: {totalPassiveIncome}/s èrÛd≥a: {string.Join(", ", activeSources)}");
+                    //}
                 }
             }
         }
