@@ -37,14 +37,27 @@ public class SaveManager : MonoBehaviour
             switch (data)
             {
                 case AntData ant: gameSave.ants.Add(ant); break;
-                case StructureData building: gameSave.structures.Add(building); break;
+                //case StructureData building: gameSave.structures.Add(building); break;
                 //case TunnelData tunnel: gameSave.tunnels.Add(tunnel); break;
+                case WorkplaceData workplace: gameSave.workplaceData.Add(workplace); break;
             }
         }
 
         return gameSave;
     }
-
+    public Vector2Int GetCurrentPosition(Vector3 pos)
+    {
+        GenerateVirtualGrid gridManager = FindAnyObjectByType<GenerateVirtualGrid>();
+        if (gridManager != null)
+        {
+            return gridManager.WorldToGrid(pos);
+        }
+        else
+        {
+            Debug.LogError("GridManager not found!");
+            return Vector2Int.zero;
+        }
+    }
     public void SaveGame()
     {
         var gameSave = SaveAll();
@@ -54,3 +67,9 @@ public class SaveManager : MonoBehaviour
         Debug.Log("Saved Game");
     }
 }
+// wystarczy to jedynie poszerzaæ w switchu o kolejne przypadki
+// w GameSave dodawaæ listy do przechowywania danych
+// i tworzyæ odpowiednie klasy danych do przechowywania informacji o obiektach
+// to jest bardzo elastyczne podejœcie dziêki któremu unikamy niepotrzebnego kodu oraz dziedziczenia
+
+// ka¿dy nastêpny typ obiektu Saveable wymaga jedynie dodania kolejnego case'a w switchu powy¿ej oraz rejestracji

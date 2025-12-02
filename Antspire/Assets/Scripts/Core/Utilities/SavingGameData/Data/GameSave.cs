@@ -23,7 +23,8 @@ public class GameSave
         player = new PlayerData();
         ants = new List<AntData>();
         enemies = new List<EnemyData>();
-        structures = new List<StructureData>();
+        houseData = new List<HouseData>();
+        workplaceData = new List<WorkplaceData>();
         roads = new List<RoadData>();
         resources = new List<ResourceData>();
     }
@@ -31,7 +32,8 @@ public class GameSave
     public PlayerData player;
     public List<AntData> ants;
     public List<EnemyData> enemies;
-    public List<StructureData> structures;
+    public List<HouseData> houseData;
+    public List<WorkplaceData> workplaceData;
     public List<RoadData> roads;
     public List<ResourceData> resources;
 
