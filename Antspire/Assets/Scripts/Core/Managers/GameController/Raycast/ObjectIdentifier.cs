@@ -6,7 +6,7 @@ public class ObjectIdentifier : MonoBehaviour
     private void Start()
     {
         RaycastManager raycastManager = FindAnyObjectByType<RaycastManager>();
-        raycastManager.OnHoverEnter += IdentifyObject;  // ← SUBSCRIBE
+        raycastManager.OnHoverEnter += IdentifyObject;  // SUBSCRIBE czyli uruchomienie metody IdentifyObject przy zdarzeniu OnHoverEnter
         raycastManager.OnHoverExit += OnObjectUnhovered;
     }
 
@@ -17,6 +17,12 @@ public class ObjectIdentifier : MonoBehaviour
                 OnQueenShopHovered?.Invoke(shop);
                 Debug.Log("Queen Pheromone Shop hovered");
                 break;
+            case GameObject go when go.TryGetComponent<Workplace>(out var workplace):
+                Debug.Log("Workplace hovered"); 
+                break;
+            case GameObject go when go.TryGetComponent<Ant>(out var ant):
+                Debug.Log("Ant hovered");
+                break;
                 //case GameObject go when go.TryGetComponent<AntWorkerInfo>(out var antInfo):
                 //    OnAntHovered?.Invoke(antInfo);
                 //    break;
@@ -25,7 +31,7 @@ public class ObjectIdentifier : MonoBehaviour
 
     private void OnObjectUnhovered(GameObject obj)
     {
-        // Tutaj możesz dodać logikę dla zdarzenia unhover, jeśli potrzebujesz
+        
     }
 
     // metoda IdentifyObject identyfikuje obiekt i wywołuje odpowiednie zdarzenie

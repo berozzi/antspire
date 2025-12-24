@@ -23,33 +23,26 @@ public class RaycastManager : MonoBehaviour
         if (playerCamera == null)
             playerCamera = Camera.main;
     }
-    void Update() {}
     public void HandleMainRaycast()
     {
         var (success, hitObject) = GetRaycastHitObject();
-        if (success)
+
+        GameObject objectUnderCursor = success ? hitObject : null;
+
+        // Jeœli obiekt pod kursorem siê zmieni³ (w stosunku do obecnego hoverowanego)
+        if (objectUnderCursor != currentHoveredObject)
         {
-            currentHoveredObject = hitObject;
-            // SprawdŸ czy obiekt siê zmieni³
-            if (currentHoveredObject != previousHoveredObject)
-            {
-                if (previousHoveredObject != null)
-                    OnHoverExit?.Invoke(previousHoveredObject);
-                OnHoverEnter?.Invoke(currentHoveredObject);
-                previousHoveredObject = currentHoveredObject;
-            }
-        }
-        else
-        {
-            // Nie ma obiektu pod kursorem
+            // Jeœli by³ poprzedni obiekt, to wywo³aj Exit
             if (currentHoveredObject != null)
-            {
                 OnHoverExit?.Invoke(currentHoveredObject);
-                currentHoveredObject = null;
-                previousHoveredObject = null;
-            }
+
+            // Jeœli teraz jest obiekt, to wywo³aj Enter
+            if (objectUnderCursor != null)
+                OnHoverEnter?.Invoke(objectUnderCursor);
+
+            // Zaktualizuj obecny obiekt
+            currentHoveredObject = objectUnderCursor;
         }
-        
     }
 
     private (bool, GameObject) GetRaycastHitObject()
