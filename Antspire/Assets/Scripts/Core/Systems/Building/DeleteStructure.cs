@@ -7,6 +7,7 @@ public class DeleteStructure : MonoBehaviour
     GenerateVirtualGrid grid;
     [SerializeField] PlaceDownStructure placeDownStructure;
     [SerializeField] HUDManager hudManager;
+    [SerializeField] NavMeshManager navMeshManager;
     private void Awake()
     {
         deleteAction = new InputAction("Delete", binding: "<Mouse>/leftButton");
@@ -82,32 +83,16 @@ public class DeleteStructure : MonoBehaviour
             }
 
             // Zmień stan komórki na wolną (jeśli istniała)
-            placeDownStructure.ChangeOccupiedState(gridCoord, false);
-            RemoveStructureFromSave(hitObject.transform.position);
+            placeDownStructure.OccupyCells(gridCoord, false);
             // Usuń obiekt
             Destroy(hitObject);
             Debug.Log($" Usunięto obiekt z koliderem na pozycji siatki: {gridCoord}");
+            // Refresh navmesh
+            navMeshManager.RebuildNavMesh();
         }
         else
         {
             Debug.Log("Nie trafiono żadnego obiektu z koliderem do usunięcia.");
-        }
-    }
-    public void RemoveStructureFromSave(Vector3 exactPosition)
-    {
-        GameSave gameSave = GameSave.Instance;
-        if (gameSave == null) return;
-
-        // Szukaj dokładnie na tej pozycji (bez tolerancji, bo masz raycast)
-        StructureData structureToRemove = gameSave.structures.Find(s =>
-            Mathf.Approximately(s.x, exactPosition.x) &&
-            Mathf.Approximately(s.y, exactPosition.y)
-        );
-
-        if (structureToRemove != null)
-        {
-            gameSave.structures.Remove(structureToRemove);
-            Debug.Log($"Usunięto z zapisu: {structureToRemove.type} na ({exactPosition.x:F2}, {exactPosition.y:F2})");
         }
     }
 }

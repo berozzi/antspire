@@ -20,7 +20,10 @@ public class PlaceDownStructure : MonoBehaviour
     private Vector2Int lastGridPos;
     private bool wasValidLastFrame = true;
 
-   
+    int prefabWidth;
+    int prefabHeight;
+
+    [SerializeField] NavMeshManager navMeshManager;
     private void Awake()
     {
         buildAction = new InputAction(type: InputActionType.Button, binding: "<Mouse>/leftButton");
@@ -28,13 +31,19 @@ public class PlaceDownStructure : MonoBehaviour
         hudManager = FindAnyObjectByType<HUDManager>();
         groundLayerMask = LayerMask.GetMask("Ground");
     }
-    public void SetStructurePrefab(GameObject prefab)
+    public void SetStructurePrefab(GameObject prefab, int w, int h)
     {
         structurePrefab = prefab;
+        prefabWidth = w;
+        prefabHeight = h;
     }
     private void Update()
     {
-        if (structurePrefab == null) return;
+        if (structurePrefab == null)
+        {
+            Debug.Log("Structure prefab not assigned, highlight might not working");
+            return;
+        }
 
         UpdateHighlight();
     }
@@ -71,13 +80,6 @@ public class PlaceDownStructure : MonoBehaviour
             Destroy(currentHighlight);
         }
     }
-    void Start()
-    {
-        if (structurePrefab == null)
-        {
-            Debug.LogError("structurePrefab is not assigned. Should be assigned later, in SelectStructure");
-        }
-    }
     private void OnBuild(InputAction.CallbackContext context)
     {
         if (hudManager.isPaused) return; // Nie buduj, gdy gra jest wstrzymana
@@ -97,36 +99,52 @@ public class PlaceDownStructure : MonoBehaviour
         Vector3 gridPos = SnapBuildingToGrid(mousePos);
         Vector2Int gridCoord = grid.WorldToGrid(gridPos);
 
-        if (IsCellOccupied(gridCoord))
+        if (!CanPlaceBuilding(gridCoord))
         {
-            Debug.Log("Cannot place structure here, area is occupied.");
+            Debug.Log("Cannot place structure here, area is occupied." + gridPos);
             return;
         }
         // Stwórz budynek
-
         Instantiate(structurePrefab, gridPos, Quaternion.identity);
         Debug.Log($"Placed structure at grid position: {gridCoord}");
-        ChangeOccupiedState(gridCoord, true);
-        SaveStructureData(gridPos);
+        OccupyCells(gridCoord, true);
+        // Refresh navmesh
+        navMeshManager.RebuildNavMesh();
     }
-    bool IsCellOccupied(Vector2Int gridCoord)
+    bool CanPlaceBuilding(Vector2Int baseCoord)
     {
-        // Zakładając, że masz dostęp do siatki i jej komórek
-        Cell cell = grid.GetCell(gridCoord);
-        if (cell == null)
+        for (int x = 0; x < prefabWidth; x++)
         {
-            Debug.LogError($"Cell at {gridCoord} is null.");
-            
+            for (int z = 0; z < prefabHeight; z++)
+            {
+                Vector2Int checkCoord = baseCoord + new Vector2Int(x, z);
+
+                // sprawdź czy komórka istnieje
+                Cell cell = grid.GetCell(checkCoord);
+                if (cell == null)
+                    return false;
+
+                // sprawdź czy komórka zajęta
+                if (cell.isOccupied)
+                    return false;
+            }
         }
-        return cell != null && cell.isOccupied;
+
+        return true;
     }
     // zmiana stanu zajętości komórki
-    public void ChangeOccupiedState(Vector2Int gridCoord, bool occupied)
+    public void OccupyCells(Vector2Int baseCoord, bool state)
     {
-        Cell cell = grid.GetCell(gridCoord);
-        if (cell != null)
+        for (int x = 0; x < prefabWidth; x++)
         {
-            cell.isOccupied = occupied;
+            for (int z = 0; z < prefabHeight; z++)
+            {
+                Vector2Int coord = baseCoord + new Vector2Int(x, z);
+                Cell cell = grid.GetCell(coord);
+
+                if (cell != null)
+                    cell.isOccupied = state;
+            }
         }
     }
     // zbieranie pozycji w świecie pod myszką za pomocą raycasta, ten bool na początku i Vector3 to tuple, funckja zwraca dwie wartości bool i vector3
@@ -149,6 +167,7 @@ public class PlaceDownStructure : MonoBehaviour
         return (false, Vector3.zero);
     }
     // funkcja przyciągająca budynek do siatki
+    // należy ją wykorzystać przy wczytywaniu budynków z zapisu
     public Vector3 SnapBuildingToGrid(Vector3 worldPos)
     {
         Vector2Int gridCoord = grid.WorldToGrid(worldPos);
@@ -174,7 +193,7 @@ public class PlaceDownStructure : MonoBehaviour
         }
 
         // Aktualizuj kolor na podstawie dostępności
-        bool isValid = !IsCellOccupied(gridCoordHighlight);
+        bool isValid = CanPlaceBuilding(gridCoordHighlight);
         UpdateHighlightColor(isValid);
     }
     // stworzenie highlightu lub jego aktualizacja
@@ -189,8 +208,8 @@ public class PlaceDownStructure : MonoBehaviour
         currentHighlight.transform.position = worldPos;
 
         // Dopasuj rozmiar do twojego budynku
-        float buildingSize = GetBuildingSize();
-        currentHighlight.transform.localScale = new Vector3(buildingSize, 0.1f, buildingSize);
+        
+        currentHighlight.transform.localScale = new Vector3(prefabWidth, 0.1f, prefabHeight * 0.9f);
     }
     // stworzenie obiektu podświetlenia Cube'a
     private void CreateHighlightObject()
@@ -216,45 +235,5 @@ public class PlaceDownStructure : MonoBehaviour
             highlightRenderer.material = isValid ? highlightMaterial : invalidMaterial;
             wasValidLastFrame = isValid;
         }
-    }
-
-    private float GetBuildingSize()
-    {
-        // Dostosuj rozmiar do twojego budynku
-        // Możesz pobrać z prefaba lub ustawić stałą
-        if (structurePrefab != null)
-        {
-            Renderer renderer = structurePrefab.GetComponent<Renderer>();
-            if (renderer != null)
-            {
-                return renderer.bounds.size.x * 0.9f; // 90% rozmiaru budynku
-            }
-        }
-        return 0.9f; // domyślny rozmiar
-    }
-
-    // Zapisz dane struktury do GameSave
-    void SaveStructureData(Vector3 position)
-    {
-        GameSave gameSave = GameSave.Instance;
-        if (gameSave == null)
-        {
-            Debug.Log("GameSave is null");
-        }
-        // Utwórz nowy obiekt StructureData przed zapisaniem
-        StructureData structureData = new StructureData()
-        {
-            //id = IncrementID(id),  // Musisz mieć system ID
-            type = structurePrefab.name, // lub pobierz z komponentu
-            x = position.x,
-            y = position.y,
-            level = 1, // domyślny poziom
-            capacity = 10, // domyślna pojemność
-            isPlayerStructure = true // lub false w zależności od logiki gry
-        };
-
-        // Dodaj do listy aktywnych struktur
-        gameSave.structures.Add(structureData);
-        //Debug.Log($"Zapisano strukturę: {structureData.type} na pozycji ({position.x}, {position.y})");
     }
 }

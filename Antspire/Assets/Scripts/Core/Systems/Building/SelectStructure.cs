@@ -9,6 +9,8 @@ public class SelectStructure : MonoBehaviour
     [SerializeField] private PlaceDownStructure placeDownStructure;
     [SerializeField] private GameState gameState;
     [SerializeField] private GameplayCanvasManager gameplayCanvas;
+    [SerializeField] private int buildingWidth = 1;
+    [SerializeField] private int buildingHeight = 1;
 
     void Start()
     {
@@ -26,7 +28,7 @@ public class SelectStructure : MonoBehaviour
         if (placeDownStructure != null && buildingPrefab != null)
         {
             Debug.Log($"Selected building prefab: {buildingPrefab.name}");
-            gameState.SetPrefab(buildingPrefab);
+            gameState.SetPrefab(buildingPrefab, buildingWidth, buildingHeight);
             gameState.TogglePanel(GameStates.BuildMode);
             gameplayCanvas.CloseAllSubpanels();
         }
