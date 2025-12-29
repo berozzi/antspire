@@ -7,4 +7,18 @@ public class WorkplaceData
     public float baseIncomePerSecond;
     public bool generatesIncome;
     public bool isActive;
+    public WorkplaceType workplaceType;
+    public int capacity = 1;
+    public int level = 1;
+}
+
+public enum WorkplaceType
+{
+    Farm,
+    Factory,
+    Medical,
+    ResearchLab,
+    Military,
+    Storage,
+    Other
 }

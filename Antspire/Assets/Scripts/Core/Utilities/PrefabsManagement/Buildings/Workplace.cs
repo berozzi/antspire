@@ -3,12 +3,17 @@ using UnityEngine;
 public class Workplace : MonoBehaviour, ISaveable
 {
     [Header("Dochód Pasywny")]
-    [SerializeField] private string workplaceName = "Miejsce Pracy";
+    [SerializeField] private string workplaceName = "Miejsce Pracy (nie zmieniaæ!)";
     [SerializeField] private float baseIncomePerSecond = 1f;
     [SerializeField] private bool generatesIncome = true;
+    [SerializeField] private WorkplaceType workplaceType;
+    [SerializeField] private int capacity = 1;
+    [SerializeField] private int currentEmployees = 0;
+    [SerializeField] private int level = 1;
 
     [Header("Referencje")]
     [SerializeField] private PheromoneManager pheromoneManager;
+    private Building building;
 
     private PassiveIncomeSource incomeSource;
     private bool isRegistered = false;
@@ -17,11 +22,24 @@ public class Workplace : MonoBehaviour, ISaveable
     public string WorkplaceName => workplaceName;
     public bool IsActive => incomeSource?.IsActive ?? false;
     public float CurrentIncome => incomeSource?.GetIncomePerSecond() ?? 0f;
+    public int Capacity => capacity;
+    public int CurrentEmployees
+    {
+        get { return currentEmployees; } 
+        set { currentEmployees = value; }
+    }
+    public int Level 
+    {
+        get { return level; }
+        set { level = value; }
+    }
 
     void Start()
     {
         SaveManager.Register(this);
         InitializeIncomeSource();
+        building = GetComponent<Building>();
+        workplaceName = building.DisplayName;
     }
 
     void InitializeIncomeSource()
@@ -91,7 +109,16 @@ public class Workplace : MonoBehaviour, ISaveable
             pheromoneManager.UnregisterPassiveSource(incomeSource);
         }
     }
+    int AvailableSpots()
+    {
+        return Capacity - CurrentEmployees;
+    }
 
+    public bool HasAvailableCapacity()
+    {
+        AvailableSpots();
+        return CurrentEmployees < Capacity; 
+    }
     public object GetSaveData()
     {
         return new WorkplaceData
@@ -99,7 +126,10 @@ public class Workplace : MonoBehaviour, ISaveable
             workplaceName = this.workplaceName,
             baseIncomePerSecond = this.baseIncomePerSecond,
             generatesIncome = this.generatesIncome,
-            isActive = this.IsActive
+            isActive = this.IsActive,
+            workplaceType = this.workplaceType,
+            capacity = this.capacity,
+            level = this.level
         };
     }
 }
