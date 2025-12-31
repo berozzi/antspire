@@ -11,7 +11,7 @@ public class RaycastManager : MonoBehaviour
     // Eventy
     public event System.Action<GameObject> OnHoverEnter;    // Najecha³ na obiekt
     public event System.Action<GameObject> OnHoverExit;     // Zjecha³ z obiektu
-    public event System.Action<IClickable> OnClickableClicked;         // Klikn¹³ obiekt
+    public event System.Action<IClickable, ClickableData> OnClickableClicked;         // Klikn¹³ obiekt
 
     GameObject currentHoveredObject;
     GameObject previousHoveredObject;
@@ -22,6 +22,8 @@ public class RaycastManager : MonoBehaviour
 
         if (playerCamera == null)
             playerCamera = Camera.main;
+
+        
     }
     public void HandleMainRaycast()
     {
@@ -34,11 +36,17 @@ public class RaycastManager : MonoBehaviour
         {
             // Jeœli by³ poprzedni obiekt, to wywo³aj Exit
             if (currentHoveredObject != null)
+            {
+                
                 OnHoverExit?.Invoke(currentHoveredObject);
+            }
 
             // Jeœli teraz jest obiekt, to wywo³aj Enter
             if (objectUnderCursor != null)
+            {
+                
                 OnHoverEnter?.Invoke(objectUnderCursor);
+            }
 
             // Zaktualizuj obecny obiekt
             currentHoveredObject = objectUnderCursor;
@@ -60,10 +68,18 @@ public class RaycastManager : MonoBehaviour
     {
         if (currentHoveredObject != null)
         {
-            Debug.Log("RaycastManager: Click detected on " + currentHoveredObject.name);
-            var clickable = currentHoveredObject.GetComponent<IClickable>();
-            if (clickable != null)
-                OnClickableClicked?.Invoke(clickable);
+            //Debug.Log("RaycastManager: Click detected on " + currentHoveredObject.name);
+            var clickedObject = currentHoveredObject.GetComponent<IClickable>();
+            if (clickedObject != null)
+            {
+                ClickableData data = clickedObject.GetClickableData();
+                OnClickableClicked?.Invoke(clickedObject, data);
+            }
+            // if object is clickable, invoke the event
+            // and on that line change ObjectInfoPanel to show info about clickedObject - name, type, description
+            
         }
     }
+
+    
 }

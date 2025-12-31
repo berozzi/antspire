@@ -13,12 +13,13 @@ public partial class GoToWorkAction : Action
     [SerializeReference] public BlackboardVariable<GameObject> Workplace;
     [SerializeReference] public BlackboardVariable<float> WorkDuration;
 
+    Ant ant => Self.Value.GetComponent<Ant>();
     NavMeshAgent agent;
     float workTimer;
 
     protected override Status OnStart()
     {
-        workTimer = 0f;
+        workTimer = 110f;
         agent = Self.Value.GetComponent<NavMeshAgent>();
         if (agent == null)
         {
@@ -38,19 +39,22 @@ public partial class GoToWorkAction : Action
         {
             // Still traveling
             agent.SetDestination(Workplace.Value.transform.position);
+            ant.SetState(AntState.MovingToWork);
             return Status.Running;
         }
         else
         {
             // Arrived at workplace - now work
             agent.isStopped = true;
+            ant.SetState(AntState.Working);
             workTimer += Time.deltaTime;
 
             if (workTimer < WorkDuration.Value)
             {
-                Debug.Log($"Working: {workTimer}/{WorkDuration.Value}");
+                //Debug.Log($"Working: {workTimer}/{WorkDuration.Value}");
                 return Status.Running;
             }
+            Debug.Log("Finished working");
             return Status.Success;
         }
     }

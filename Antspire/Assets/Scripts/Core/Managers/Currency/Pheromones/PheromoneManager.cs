@@ -5,13 +5,14 @@ using UnityEngine;
 public class PheromoneManager : MonoBehaviour
 {
     [Header("Konfiguracja Feromonów")]
-    [SerializeField] private float startingPheromones = 100f;
+    [SerializeField] private float startingPheromones = 50f;
     [SerializeField] private bool enableLogs = true;
 
     [Header("Statystyki (tylko do odczytu)")]
     [SerializeField] private float currentPheromones;
     [SerializeField] private float totalEarned;
     [SerializeField] private float totalSpent;
+    float maxPheromones = 1000000f;
 
     private List<PassiveIncomeSource> passiveSources = new List<PassiveIncomeSource>();
     private Coroutine passiveIncomeCoroutine;
@@ -49,7 +50,7 @@ public class PheromoneManager : MonoBehaviour
     /// Dodaje feromony do zasobu gracza
     public void AddPheromones(float amount, string source = "Unknown")
     {
-        if (amount <= 0)
+        if (amount <= 0 || currentPheromones + amount > maxPheromones)
         {
             LogWarning($"Próba dodania nieprawid³owej iloœci feromonów: {amount} ze Ÿród³a: {source}");
             return;
@@ -61,7 +62,7 @@ public class PheromoneManager : MonoBehaviour
         OnPheromonesChanged?.Invoke(currentPheromones);
         OnPheromonesAdded?.Invoke(amount);
 
-        Log($"Dodano {amount} feromonów ze Ÿród³a: {source}. Stan: {currentPheromones}");
+        //Log($"Dodano {amount} feromonów ze Ÿród³a: {source}. Stan: {currentPheromones}");
     }
 
     /// Próbuje wydaæ feromony. Zwraca true jeœli operacja siê powiod³a.

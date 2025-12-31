@@ -11,11 +11,14 @@ public partial class AssignHouseToAntAction : Action
     [SerializeReference] public BlackboardVariable<GameObject> Home;
     [SerializeReference] public BlackboardVariable<GameObject> Self;
     [SerializeReference] public BlackboardVariable<bool> HasHome;
-    
+    Ant ant => Self.Value.GetComponent<Ant>();
+
     float maxSearchDistance = 500f;
 
     protected override Status OnStart()
     {
+
+        Debug.Log($"{Self.Value.name} szuka domu...");
         return Status.Running;
     }
 
@@ -24,14 +27,14 @@ public partial class AssignHouseToAntAction : Action
         if (Self == null || Self.Value == null)
             return Status.Failure;
 
-        // Sprawd� czy ju� ma dom
+        // Sprawdz czy ju� ma dom
         if (Home != null && Home.Value != null)
         {
             HasHome.Value = true;
             return Status.Success;
         }
 
-        // Szukaj domu
+        // Szukaj dom
         House[] allHouses = GameObject.FindObjectsByType<House>(FindObjectsSortMode.None);
 
         House closestHouse = null;
@@ -54,8 +57,9 @@ public partial class AssignHouseToAntAction : Action
         if (closestHouse != null)
         {
             Home.Value = closestHouse.gameObject;
+            ant.AssignHouse(closestHouse);
             HasHome.Value = true;
-            Debug.Log($"{Self.Value.name} znalazł dom: {closestHouse.name}");
+            //Debug.Log($"{Self.Value.name} znalazł dom: {closestHouse.name}");
             return Status.Success;
         }
         else

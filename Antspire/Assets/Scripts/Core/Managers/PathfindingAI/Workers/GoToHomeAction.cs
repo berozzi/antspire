@@ -11,11 +11,12 @@ public partial class GoToHomeAction : Action
 {
     [SerializeReference] public BlackboardVariable<GameObject> Self;
     [SerializeReference] public BlackboardVariable<GameObject> Home;
-
+    Ant ant => Self.Value.GetComponent<Ant>();
     NavMeshAgent agent;
 
     protected override Status OnStart()
     {
+        ant.SetState(AntState.MovingToHouse);
         agent = Self.Value.GetComponent<NavMeshAgent>();
         if (agent == null)
         {
@@ -26,11 +27,18 @@ public partial class GoToHomeAction : Action
 
     protected override Status OnUpdate()
     {
+        agent.isStopped = false;
         if (Self == null || Home == null) return Status.Failure;
-        agent.SetDestination(Home.Value.transform.position);
-        // myœlê ¿e mo¿na tutaj ogarn¹æ odpoczynek w domu
+        // Ustaw cel tylko raz
+        if (agent.destination != Home.Value.transform.position)
+        {
+            agent.SetDestination(Home.Value.transform.position);
+            //Debug.Log($"{Self.Value.name} idzie do domu: {Home.Value.name}");
+        }
+
         if (Vector3.Distance(Self.Value.transform.position, Home.Value.transform.position) < 3f)
         {
+              
             return Status.Success;
         }
         return Status.Running;

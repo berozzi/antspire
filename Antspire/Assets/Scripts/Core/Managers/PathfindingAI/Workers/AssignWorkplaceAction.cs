@@ -12,6 +12,7 @@ public partial class AssignWorkplaceAction : Action
     [SerializeReference] public BlackboardVariable<GameObject> Self;
     [SerializeReference] public BlackboardVariable<bool> HasWorkplace;
 
+    Ant ant => Self.Value.GetComponent<Ant>();
     float maxSearchDistance = 500f;
     protected override Status OnStart()
     {
@@ -32,6 +33,11 @@ public partial class AssignWorkplaceAction : Action
         float closestDistance = float.MaxValue;
         foreach (var workplace in allWorkplaces)
         {
+            if (!workplace.HasAvailableCapacity())
+            {
+                   // Example condition to skip workplaces that are full
+                continue;
+            }
             float distance = Vector3.Distance(
                 Self.Value.transform.position,
                 workplace.transform.position
@@ -48,6 +54,7 @@ public partial class AssignWorkplaceAction : Action
         {
             Workplace.Value = closestWorkplace.gameObject;
             HasWorkplace.Value = true;
+            ant.AssignWorkplace(closestWorkplace);
             Debug.Log($"{Self.Value.name} znalazł miejsce pracy: {closestWorkplace.WorkplaceName}");
             return Status.Success;
         }

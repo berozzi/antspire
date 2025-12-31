@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 public enum GameStates
 {
     InGame,
@@ -7,7 +8,8 @@ public enum GameStates
     DestroyMode,
     TechTree,
     WarPanel,
-    InStructureMenu
+    InStructureMenu,
+    QueenShop
 }
 public class GameState : MonoBehaviour
 {
@@ -16,6 +18,7 @@ public class GameState : MonoBehaviour
     [SerializeField] DeleteStructure deleteStructure;
     [SerializeField] HUDManager hudManager;
     [SerializeField] GameplayCanvasManager gameplayCanvasManager;
+    [SerializeField] RaycastManager raycastManager;
 
     [Header("Test Structure Selection")]
     [SerializeField] GameObject structurePrefab;
@@ -24,20 +27,49 @@ public class GameState : MonoBehaviour
     [SerializeField] KeyCode buildModeKey = KeyCode.B;
     [SerializeField] KeyCode destroyModeKey = KeyCode.N;
     [SerializeField] KeyCode exitModesKey = KeyCode.Escape;
+    [SerializeField] KeyCode raycastInputKey = KeyCode.Mouse0;
 
     // Eventy dla UI
     public event System.Action<bool> OnTechTreeToggled;
     public event System.Action<bool> OnWarPanelToggled;
     public event System.Action<bool> OnStructureMenuToggled;
+
     void Awake()
     {
         FindMissingReferences();
+        SubscribeToEvents();
+        raycastManager.OnHoverEnter += HandleHoverEnter;
+        raycastManager.OnHoverExit += HandleHoverExit;
     }
 
-    void Start() {}
+    void OnDestroy()
+    {
+        UnsubscribeFromEvents();
+        raycastManager.OnHoverExit -= HandleHoverEnter;
+        raycastManager.OnHoverExit -= HandleHoverExit;
+    }
+
+    private void SubscribeToEvents()
+    {
+        if (raycastManager != null)
+        {
+            raycastManager.OnClickableClicked += HandleClickableClick;
+            
+        }
+    }
+
+    private void UnsubscribeFromEvents()
+    {
+        if (raycastManager != null)
+        {
+            raycastManager.OnClickableClicked -= HandleClickableClick;
+            
+        }
+    }
 
     void Update()
     {
+        raycastManager.HandleMainRaycast();
         UpdateComponentsStates();
         HandleInput();
     }
@@ -52,6 +84,12 @@ public class GameState : MonoBehaviour
             hudManager = FindAnyObjectByType<HUDManager>();
         if (gameplayCanvasManager == null)
             gameplayCanvasManager = FindAnyObjectByType<GameplayCanvasManager>();
+        if (raycastManager == null)
+        {
+            Debug.Log("RaycastManager reference was missing, attempting to find one in the scene.");
+            raycastManager = FindAnyObjectByType<RaycastManager>();
+        }
+            
     }
 
     private void HandleInput()
@@ -64,13 +102,15 @@ public class GameState : MonoBehaviour
 
         if (Input.GetKeyDown(exitModesKey))
             HandleEscapeKey();
+
+        if (Input.GetKeyDown(raycastInputKey))
+            raycastManager.HandleRaycastInput();
     }
 
     public void TogglePanel(GameStates current)
     {     
         SetGameState(CurrentGameState == current ? GameStates.InGame : current);
     }
-
     private void HandleEscapeKey()
     {
         switch (CurrentGameState)
@@ -83,6 +123,7 @@ public class GameState : MonoBehaviour
                 break;
             case GameStates.InStructureMenu:
             case GameStates.DestroyMode:
+            case GameStates.QueenShop:
             case GameStates.TechTree:
             case GameStates.WarPanel:
                 SetGameState(GameStates.InGame);
@@ -126,6 +167,12 @@ public class GameState : MonoBehaviour
             OnStructureMenuToggled?.Invoke(false);
         else if (newState == GameStates.InStructureMenu && previousState != GameStates.InStructureMenu)
             OnStructureMenuToggled?.Invoke(true);
+
+        // QueenShop events
+        if (newState == GameStates.QueenShop && gameplayCanvasManager != null)
+            gameplayCanvasManager.TogglePheromoneShop(true);
+        else if (previousState == GameStates.QueenShop && gameplayCanvasManager != null)
+            gameplayCanvasManager.TogglePheromoneShop(false);
     }
 
     private void UpdateComponentsStates()
@@ -138,13 +185,31 @@ public class GameState : MonoBehaviour
         if (deleteStructure != null)
             deleteStructure.enabled = CurrentGameState == GameStates.DestroyMode && shouldBeActive;
     }
+    void HandleClickableClick(IClickable clickable, ClickableData data)
+    {
+        clickable.OnClick();
+        Debug.Log($"Clicked on: {data.Name} of type {data.Type}");
 
-    public void SetPrefab(GameObject prefab)
+        hudManager.ShowObjectInfo(data);
+    }
+    // podpina prefaba struktury i tunelu a potem przekazuje to do PlaceDownStructure
+    public void SetPrefab(GameObject prefab, int width, int height)
     {
         structurePrefab = prefab;
         if (placeDownStructure != null && structurePrefab != null)
         {
-            placeDownStructure.SetStructurePrefab(structurePrefab);
+            placeDownStructure.SetStructurePrefab(structurePrefab, width, height);
         }
+    }
+    void HandleHoverEnter(GameObject obj)
+    {
+        if (obj.TryGetComponent(out HoverHighlight highlight))
+            highlight.EnableHighlight();
+    }
+
+    void HandleHoverExit(GameObject obj)
+    {
+        if (obj.TryGetComponent(out HoverHighlight highlight))
+            highlight.DisableHighlight();
     }
 }

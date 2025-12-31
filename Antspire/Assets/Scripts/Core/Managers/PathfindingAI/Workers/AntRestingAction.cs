@@ -11,13 +11,14 @@ public partial class AntRestingAction : Action
 {
     [SerializeReference] public BlackboardVariable<GameObject> Self;
     [SerializeReference] public BlackboardVariable<float> RestTime;
-    
+    Ant ant => Self.Value.GetComponent<Ant>();
     NavMeshAgent agent;
     float timer;
 
     protected override Status OnStart()
     {
-        timer = 28f;
+        ant.SetState(AntState.Resting);
+        timer = 20f;
         agent = Self.Value.GetComponent<NavMeshAgent>();
         if (agent == null)
         {
@@ -30,6 +31,7 @@ public partial class AntRestingAction : Action
     {
         agent.isStopped = true; // Stop movement while resting
         timer += Time.deltaTime;
+        
         //UnityEngine.Debug.Log($"Ant is resting: {timer}/{RestTime.Value} seconds");
         if (timer >= RestTime.Value)
         { // Resume movement after resting

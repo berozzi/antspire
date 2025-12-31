@@ -23,9 +23,9 @@ public class ObjectIdentifier : MonoBehaviour
             case GameObject go when go.TryGetComponent<Ant>(out var ant):
                 Debug.Log("Ant hovered");
                 break;
-                //case GameObject go when go.TryGetComponent<AntWorkerInfo>(out var antInfo):
-                //    OnAntHovered?.Invoke(antInfo);
-                //    break;
+            case GameObject go when go.TryGetComponent<House>(out var house):
+                Debug.Log("House hovered");
+                break;
         }
     }
 
