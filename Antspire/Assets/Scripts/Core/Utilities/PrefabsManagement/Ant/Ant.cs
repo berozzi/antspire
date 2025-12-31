@@ -47,12 +47,13 @@ public class Ant : MonoBehaviour, ISaveable
     public void AssignWorkplace(Workplace workplace)
     {
         assignedWorkplace = workplace;
+        workplace.CurrentEmployees += 1;
         Debug.Log($"Ant {name} assigned to workplace {workplace.WorkplaceName}");
     }
     public void SetState(AntState newState)
     {
         currentState = newState;
-        Debug.Log($"Ant {name} changed state to {newState}");
+        //Debug.Log($"Ant {name} changed state to {newState}");
     }
     
     public void SetPosition()

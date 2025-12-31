@@ -1,11 +1,12 @@
 using UnityEngine;
 
-public class Workplace : MonoBehaviour, ISaveable
+public class Workplace : MonoBehaviour, ISaveable, IClickable
 {
     [Header("Dochód Pasywny")]
-    [SerializeField] private string workplaceName = "Miejsce Pracy (nie zmieniaæ!)";
+    [SerializeField] private string workplaceName = "Miejsce Pracy";
+    [SerializeField] private string description = "Opis miejsca pracy.";
     [SerializeField] private float baseIncomePerSecond = 1f;
-    [SerializeField] private bool generatesIncome = true;
+    [SerializeField] private bool generatesIncome = true; // set to false if this workplace does not generate pheromone income
     [SerializeField] private WorkplaceType workplaceType;
     [SerializeField] private int capacity = 1;
     [SerializeField] private int currentEmployees = 0;
@@ -13,13 +14,13 @@ public class Workplace : MonoBehaviour, ISaveable
 
     [Header("Referencje")]
     [SerializeField] private PheromoneManager pheromoneManager;
-    private Building building;
 
     private PassiveIncomeSource incomeSource;
     private bool isRegistered = false;
 
     // Properties dla AI
     public string WorkplaceName => workplaceName;
+    public string Description => description;
     public bool IsActive => incomeSource?.IsActive ?? false;
     public float CurrentIncome => incomeSource?.GetIncomePerSecond() ?? 0f;
     public int Capacity => capacity;
@@ -38,8 +39,6 @@ public class Workplace : MonoBehaviour, ISaveable
     {
         SaveManager.Register(this);
         InitializeIncomeSource();
-        building = GetComponent<Building>();
-        workplaceName = building.DisplayName;
     }
 
     void InitializeIncomeSource()
@@ -61,16 +60,6 @@ public class Workplace : MonoBehaviour, ISaveable
         }
     }
 
-    /// Aktywuje/dezaktywuje generowanie dochodu
-    public void SetIncomeActive(bool active)
-    {
-        if (incomeSource != null)
-        {
-            incomeSource.SetActive(active);
-            Debug.Log($"{workplaceName} - generowanie dochodu: {(active ? "AKTYWNE" : "WY£¥CZONE")}");
-        }
-    }
-
     /// Ulepsza dochód z tego miejsca pracy
     public void UpgradeIncome(float upgradeAmount)
     {
@@ -80,7 +69,7 @@ public class Workplace : MonoBehaviour, ISaveable
             Debug.Log($"Ulepszono {workplaceName}. Nowy dochód: {incomeSource.GetIncomePerSecond()}/s");
         }
     }
-
+   
     /// Ustawia now¹ bazow¹ wartoœæ dochodu
     public void SetBaseIncome(float newIncome)
     {
@@ -91,24 +80,7 @@ public class Workplace : MonoBehaviour, ISaveable
             // Tutaj potrzebowalibyœmy metody do aktualizacji w PassiveIncomeSource
         }
     }
-
-    /// Zwraca informacje o miejscu pracy dla UI
-    public string GetWorkplaceInfo()
-    {
-        if (!generatesIncome) return $"{workplaceName} (brak dochodu)";
-
-        return $"{workplaceName}\nDochód: {CurrentIncome}/s\nStatus: {(IsActive ? "Aktywne" : "Nieaktywne")}";
-    }
-
-    void OnDestroy()
-    {
-        SaveManager.Unregister(this);
-        // Wyrejestruj Ÿród³o przy zniszczeniu
-        if (isRegistered && pheromoneManager != null && incomeSource != null)
-        {
-            pheromoneManager.UnregisterPassiveSource(incomeSource);
-        }
-    }
+    
     int AvailableSpots()
     {
         return Capacity - CurrentEmployees;
@@ -130,6 +102,49 @@ public class Workplace : MonoBehaviour, ISaveable
             workplaceType = this.workplaceType,
             capacity = this.capacity,
             level = this.level
+        };
+    }
+    /// Aktywuje/dezaktywuje generowanie dochodu
+    public void SetIncomeActive(bool active)
+    {
+        if (incomeSource != null)
+        {
+            incomeSource.SetActive(active);
+            Debug.Log($"{workplaceName} - generowanie dochodu: {(active ? "AKTYWNE" : "WY£¥CZONE")}");
+        }
+    }
+    void OnDestroy()
+    {
+        SaveManager.Unregister(this);
+        // Wyrejestruj Ÿród³o przy zniszczeniu
+        if (isRegistered && pheromoneManager != null && incomeSource != null)
+        {
+            pheromoneManager.UnregisterPassiveSource(incomeSource);
+        }
+    }
+
+    /// IClickable implementation
+    public void OnClick()
+    {
+        Debug.Log($"Clicked on workplace: {workplaceName}");
+    }
+    /// Zwraca dane do wyœwietlenia w UI po klikniêciu
+    public ClickableData GetClickableData()
+    {
+        var stats = new System.Collections.Generic.Dictionary<string, string>
+        {
+            { "Dochód", $"{CurrentIncome}/s" },
+            { "Status", IsActive ? "Aktywne" : "Nieaktywne" },
+            { "Poziom", level.ToString() },
+            { "Pojemnoœæ", $"{CurrentEmployees}/{Capacity}" }
+        };
+        return new ClickableData
+        {
+            Name = workplaceName,
+            Type = workplaceType.ToString(),
+            Description = description,
+            Icon = null, // Mo¿na przypisaæ ikonê miejsca pracy tutaj
+            Stats = stats
         };
     }
 }

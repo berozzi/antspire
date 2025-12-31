@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class House : MonoBehaviour
+public class House : MonoBehaviour/*, ISaveable, IUpgradeable*/
 {
     //[SerializeField] private string houseName = "Dom";
     //[SerializeField] private int level = 1;
