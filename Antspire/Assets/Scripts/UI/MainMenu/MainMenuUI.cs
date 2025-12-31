@@ -9,6 +9,7 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] private Button playButton;
     [SerializeField] private Button settingsButton;
     [SerializeField] private Button quitButton;
+    [SerializeField] private Button loadButton;
 
     [Header("Panels")]
     [SerializeField] private GameObject mainPanel;
@@ -20,6 +21,7 @@ public class MainMenuUI : MonoBehaviour
         playButton.onClick.AddListener(OnPlayClicked);
         settingsButton.onClick.AddListener(OnSettingsClicked);
         quitButton.onClick.AddListener(OnQuitClicked);
+        loadButton.onClick.AddListener(OnLoadGame);
 
         ShowMainPanel();
     }
@@ -37,6 +39,10 @@ public class MainMenuUI : MonoBehaviour
     private void OnQuitClicked()
     {
         MainMenuManager.QuitGame();
+    }
+    private void OnLoadGame()
+    {
+        MainMenuManager.LoadGame();
     }
 
     private void ShowMainPanel()

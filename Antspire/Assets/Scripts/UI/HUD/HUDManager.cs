@@ -9,8 +9,12 @@ public class HUDManager : MonoBehaviour
     public GameObject menuPanel;
     public GameObject menuButton;
 
-    [Header("Info Panel References")]
-    public GameObject objectInfoPanel;
+    [Header("Info Panel References (More in comments in code)")]
+    public GameObject objectInfoPanel; // this is a parent panel for infoPanel
+    public GameObject infoPanel; // child of objectInfoPanel
+
+    [Header("Info Panel Script Reference")]
+    [SerializeField] InfoPanel infoPanelScript;
 
     [Header("Inventory References")]
     public GameObject inventoryPanel;
@@ -27,6 +31,10 @@ public class HUDManager : MonoBehaviour
         CloseAllPanels();
         menuButton.SetActive(true);
         inventoryPanel.SetActive(true);
+        if (infoPanelScript == null)
+        {
+            infoPanelScript = infoPanel.GetComponent<InfoPanel>();
+        }
     }
 
     // Menu Methods
@@ -70,16 +78,7 @@ public class HUDManager : MonoBehaviour
                 feromones = 5678,
                 wisdomPoints = 1234
             };
-            //gameSave.resources.Add(new ResourceData()
-            //{
-            //    id = System.Guid.NewGuid().ToString(),
-            //    resourceName = "Wood",
-            //    type = ResourceType.Wood,
-            //    x = 10,
-            //    y = 20,
-            //    value = 100,
-            //    isAvailable = true
-            //});
+            
 
             SaveGameToFile(gameSave);
         }
@@ -115,10 +114,10 @@ public class HUDManager : MonoBehaviour
     }
 
     // Object Info Methods
-    public void ShowObjectInfo(string objectName, string description)
+    public void ShowObjectInfo(ClickableData data)
     {
         objectInfoPanel.SetActive(true);
-        // Tutaj mo¿esz ustawiæ tekst w panelu informacji
+        infoPanelScript.ShowInfoWithData(data);
     }
 
     public void HideObjectInfo()
