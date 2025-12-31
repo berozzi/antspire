@@ -1,26 +1,16 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 using System;
 using System.Linq;
 
 public class AdvancedDebugConsole : MonoBehaviour
 {
-    public static event Action<bool> OnConsoleStateChanged; // true = otwarta, false = zamknięta
-
     [Header("Console Settings")]
     public bool showConsole = false;
-    public KeyCode toggleModifier = KeyCode.LeftShift; // Modyfikator do otwierania konsoli
-    public KeyCode toggleKey = KeyCode.Tab;            // Klawisz otwierania/zamykania konsoli
-    public KeyCode closeKey = KeyCode.Escape;     // Klawisz zamykania konsoli
-    public KeyCode executeKey = KeyCode.Backspace;   // Klawisz wykonywania komend
+    public KeyCode toggleKey = KeyCode.BackQuote; // Klawisz otwierania
+    public KeyCode closeKey = KeyCode.Semicolon;     // Klawisz zamykania
+    public KeyCode executeKey = KeyCode.Return;   // Klawisz wykonywania komend
     public int maxMessageHistory = 50;
-    private bool isPausedInDebug = false;
-    public bool opencursorWhenOpen = true;
-    
-    private float previousTimeScale = 1f;
-    private bool wasCursorVisible;
-    private CursorLockMode previousCursorLockState;
-    private bool wasPlayerInputEnabled = true;
 
     [Header("Ant Settings")]
     public GameObject antPrefab;
@@ -78,77 +68,23 @@ public class AdvancedDebugConsole : MonoBehaviour
         LogSystem($"Debug Console Ready - Press {toggleKey} to open, {closeKey} to close");
     }
 
-    #region Game State Management
-    private void SetConsoleState(bool consoleActive)
-    {
-        showConsole = consoleActive;
-        OnConsoleStateChanged?.Invoke(showConsole);
-        if (consoleActive == true)
-        {
-            // ZAPISZ OBECNY STAN PRZED OTWARCIEM KONSOLI
-            wasCursorVisible = Cursor.visible;
-            previousCursorLockState = Cursor.lockState;
-
-            // WŁĄCZ KURSOR I ODŁUŻ GO
-            Cursor.visible = true;
-            Cursor.lockState = CursorLockMode.None;
-
-            // WYŁĄCZ INPUT GRACZA (dostosuj do swojego systemu)
-            DisablePlayerInput();
-        } 
-        else
-        {
-            // PRZYWRÓĆ POPRZEDNI STAN PO ZAMKNIĘCIU KONSOLI
-            Cursor.visible = wasCursorVisible;
-            Cursor.lockState = previousCursorLockState;
-            Debug.Log("Cursor state restored");
-            // WŁĄCZ INPUT GRACZA
-            EnablePlayerInput();
-        }
-
-        Debug.Log($"After SetConsoleState: showConsole = {showConsole}");
-    }
-
-    private void DisablePlayerInput()
-    {
-        isPausedInDebug = true;
-        Time.timeScale = 0f;
-        Debug.Log("Player input disabled - console active");
-    }
-
-    private void EnablePlayerInput()
-    {
-        isPausedInDebug = false;
-        Time.timeScale = 1f;
-        Debug.Log("Player input enabled - console closed");
-    }
-    #endregion
-    
-
-
     void Update()
     {
-        // DEBUG - sprawdź czy klawisz jest w ogóle wykrywany
-        if (Input.GetKeyDown(toggleKey) && IsShiftPressed())
+        // Otwieranie konsoli - tylko gdy jest zamkni�ta
+        if (!showConsole && Input.GetKeyDown(toggleKey))
         {
-            Debug.Log($"Shift+Tab pressed! Current showConsole: {showConsole}");
-        }
-
-        // ESC zawsze zamyka gdy konsola jest otwarta
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            if (showConsole)
-            {
-                SetConsoleState(false);
-                Debug.Log("Console closed with ESC");
-            }
+            showConsole = true;
+            inputBuffer = "";
+            Debug.Log($"Console opened with {toggleKey}");
             return;
         }
 
-        // Toggle konsoli - Shift+Tab otwiera/zamyka
-        if (Input.GetKeyDown(toggleKey) && IsShiftPressed())
+        // Zamykanie konsoli - tylko gdy jest otwarta
+        if (showConsole && Input.GetKeyDown(closeKey))
         {
-            ToggleConsole();
+            showConsole = false;
+            Debug.Log($"Console closed with {closeKey}");
+            return;
         }
 
         // Wykonywanie komendy - tylko gdy konsola jest otwarta
@@ -159,67 +95,13 @@ public class AdvancedDebugConsole : MonoBehaviour
         }
     }
 
-    // Sprawdza czy Shift jest wciśnięty (lewy lub prawy)
-    private bool IsShiftPressed()
-    {
-        return Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-    }
-
-    private void ToggleConsole()
-    {
-        
-        SetConsoleState(!showConsole);
-        Debug.Log($"Console toggled: {showConsole}");
-
-        if (showConsole)
-            inputBuffer = "";
-    }
-
-
-    private float lastGuiUpdate;
-    private float guiUpdateInterval = 0.1f; // 10 FPS dla GUI
-
     void OnGUI()
     {
-        {
-            if (!showConsole) return;
+        if (!showConsole) return;
 
-            // OBSŁUGA KLAWISZY - NA SAMYM POCZĄTKU OnGUI
-            if (Event.current.isKey && Event.current.type == EventType.KeyDown)
-            {
-                // ESC ZAMYKA KONSOLĘ
-                if (Event.current.keyCode == KeyCode.Escape)
-                {
-                    showConsole = false;
-                    Event.current.Use();
-                    return;
-                }
-
-                // RETURN/ENTER WYKONUJE KOMENDĘ
-                if ((Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter)
-                    && !string.IsNullOrEmpty(inputBuffer))
-                {
-                    ExecuteCommand(inputBuffer);
-                    inputBuffer = "";
-                    Event.current.Use();
-                    return;
-                }
-            }
-            DrawConsole();
-        }
+        DrawConsole();
     }
-    void OnDestroy()
-    {
-        // Wyczyść kolekcje
-        messageHistory?.Clear();
-        commands?.Clear();
 
-        // Wymuś garbage collection
-        System.GC.Collect();
-        System.GC.WaitForPendingFinalizers();
-
-        Debug.Log("Debug Console cleaned up");
-    }
     #region Command System
     private void RegisterCommands()
     {
@@ -233,7 +115,7 @@ public class AdvancedDebugConsole : MonoBehaviour
         RegisterCommand("clear", ClearConsole);
         RegisterCommand("echo", Echo);
         RegisterCommand("keys", ShowKeys);
-       
+        RegisterCommand("set_key", SetKey);
 
         // GameObject commands
         RegisterCommand("destroy", DestroyObject);
@@ -243,7 +125,8 @@ public class AdvancedDebugConsole : MonoBehaviour
         RegisterCommand("timescale", SetTimeScale);
         RegisterCommand("pause", PauseGame);
 
-        
+        // Test command
+        RegisterCommand("test", TestCommand);
     }
 
     public void RegisterCommand(string command, CommandHandler handler)
@@ -251,14 +134,11 @@ public class AdvancedDebugConsole : MonoBehaviour
         if (commands.ContainsKey(command))
         {
             commands[command] = handler;
-            Debug.Log($"Command '{command}' updated");
         }
         else
         {
             commands.Add(command, handler);
-            Debug.Log($"Command '{command}' registered");
         }
-        
     }
 
     private void ExecuteCommand(string input)
@@ -290,15 +170,60 @@ public class AdvancedDebugConsole : MonoBehaviour
     #endregion
 
     #region Command Handlers
+    private void TestCommand(string[] args)
+    {
+        LogSuccess("TEST COMMAND WORKS! Console is functioning properly.");
+    }
+
     private void ShowKeys(string[] args)
     {
         LogSystem("=== CURRENT KEY BINDINGS ===");
-        LogSystem($"Toggle Console: {toggleKey}");
+        LogSystem($"Open Console: {toggleKey}");
+        LogSystem($"Close Console: {closeKey}");
         LogSystem($"Execute Command: {executeKey}");
-        LogSystem("Use 'set_key open/execute KeyCode' to change bindings");
+        LogSystem("Use 'set_key open/close/execute KeyCode' to change bindings");
     }
 
-    
+    private void SetKey(string[] args)
+    {
+        if (args.Length < 2)
+        {
+            LogError("Usage: set_key <open/close/execute> <KeyCode>");
+            return;
+        }
+
+        string keyType = args[0].ToLower();
+        string keyName = args[1];
+
+        try
+        {
+            KeyCode newKey = (KeyCode)Enum.Parse(typeof(KeyCode), keyName, true);
+
+            switch (keyType)
+            {
+                case "open":
+                    toggleKey = newKey;
+                    LogSuccess($"Open key set to: {newKey}");
+                    break;
+                case "close":
+                    closeKey = newKey;
+                    LogSuccess($"Close key set to: {newKey}");
+                    break;
+                case "execute":
+                    executeKey = newKey;
+                    LogSuccess($"Execute key set to: {newKey}");
+                    break;
+                default:
+                    LogError("Invalid key type. Use: open, close, or execute");
+                    break;
+            }
+        }
+        catch
+        {
+            LogError($"Invalid KeyCode: {keyName}");
+        }
+    }
+
     private void SummonAnt(string[] args)
     {
         if (antPrefab == null)
@@ -308,12 +233,13 @@ public class AdvancedDebugConsole : MonoBehaviour
         }
 
         Vector3 spawnPosition = defaultSpawnPoint != null ? defaultSpawnPoint.position : Vector3.zero;
+        //int antCount = 1;
 
         if (args.Length >= 3)
         {
             if (float.TryParse(args[0], out float x) && float.TryParse(args[1], out float y) && float.TryParse(args[2], out float z))
             {
-                spawnPosition = new Vector3(x, 0, z);
+                spawnPosition = new Vector3(x, y, z);
             }
         }
 
@@ -367,7 +293,7 @@ public class AdvancedDebugConsole : MonoBehaviour
         }
     }
 
-    //private void ToggleFPS(string[] args) { LogSystem("FPS toggled"); }
+    private void ToggleFPS(string[] args) { LogSystem("FPS toggled"); }
     private void DestroyObject(string[] args) { LogSystem("Destroy command"); }
     private void ListObjects(string[] args) { LogSystem("List objects command"); }
     private void SetTimeScale(string[] args) { LogSystem("Timescale command"); }
@@ -379,10 +305,10 @@ public class AdvancedDebugConsole : MonoBehaviour
     {
         float consoleHeight = Screen.height * 0.4f;
 
-        // Tło konsoli
+        // T�o konsoli
         GUI.Box(new Rect(0, 0, Screen.width, consoleHeight), "");
 
-        // Historia wiadomości
+        // Historia wiadomo�ci
         GUILayout.BeginArea(new Rect(10, 10, Screen.width - 20, consoleHeight - 50));
         scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(consoleHeight - 60));
 
@@ -401,7 +327,7 @@ public class AdvancedDebugConsole : MonoBehaviour
         GUI.SetNextControlName("ConsoleInput");
         inputBuffer = GUILayout.TextField(inputBuffer, GUILayout.ExpandWidth(true));
 
-        // Przycisk wysyłania
+        // Przycisk wysy�ania
         if (GUILayout.Button("SEND", GUILayout.Width(60)))
         {
             if (!string.IsNullOrEmpty(inputBuffer))
@@ -420,7 +346,7 @@ public class AdvancedDebugConsole : MonoBehaviour
             GUI.FocusControl("ConsoleInput");
         }
 
-        // OBSŁUGA ENTER W GUI
+        // OBS�UGA ENTER W GUI
         if (Event.current.type == EventType.KeyDown &&
             Event.current.keyCode == executeKey &&
             !string.IsNullOrEmpty(inputBuffer) &&
@@ -431,7 +357,7 @@ public class AdvancedDebugConsole : MonoBehaviour
             Event.current.Use();
         }
 
-        // OBSŁUGA ESC W GUI - dodajemy tu również
+        // OBS�UGA ESC W GUI - dodajemy tu r�wnie�
         if (Event.current.type == EventType.KeyDown && Event.current.keyCode == closeKey)
         {
             showConsole = false;

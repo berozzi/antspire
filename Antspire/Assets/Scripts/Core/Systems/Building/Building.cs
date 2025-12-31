@@ -3,22 +3,23 @@ using UnityEngine;
 public class Building : MonoBehaviour
 {
     [SerializeField] private string buildingId;
-    [SerializeField] private string displayName;
-    [SerializeField] private BuildingCategory category;
+    [SerializeField] private string buildingName { get; set; } = string.Empty;
+    [SerializeField] private string buildingType { get; set; } = string.Empty;
+    [SerializeField] private BuildingCategory category; // po to aby kategoryzowaæ budynki
 
     public string Id => buildingId;
-    public string DisplayName => displayName;
     public BuildingCategory Category => category;
+
 }
 
 public enum BuildingCategory
 {     
     Residential,
-    Commercial,
     Industrial,
     Agricultural,
-    Recreational,
-    Institutional,
+    Barracks,
+    Medical,
+    Educational,
     MixedUse,
     Other
 }

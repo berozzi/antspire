@@ -12,6 +12,7 @@ public class ResourceData
     public bool isAvailable; // Is it currently available in the world
     //public GameObject resourcePrefab;
 }
+
 public enum ResourceType
 {
     Wood,
