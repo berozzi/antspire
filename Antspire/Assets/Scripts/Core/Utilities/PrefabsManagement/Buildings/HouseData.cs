@@ -1,16 +1,8 @@
 using UnityEngine;
 
-public class HouseData : MonoBehaviour
+public class HouseData
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public int Level { get; set; } = 1;
 }

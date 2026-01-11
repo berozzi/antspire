@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Ant : MonoBehaviour, ISaveable
+public class Ant : MonoBehaviour, ISaveable, IClickable
 {
     public string antName;
     public AntState currentState;
@@ -73,6 +73,45 @@ public class Ant : MonoBehaviour, ISaveable
             assignedHouse = assignedHouse,
             assignedWorkplace = assignedWorkplace,
             health = health,
+        };
+    }
+
+    public void LoadDataFromSave(object data)
+    {
+        if (data is AntData antData)
+        {
+            antName = antData.name;
+            gridPosition = antData.position;
+            currentState = antData.state;
+            assignedHouse = antData.assignedHouse;
+            assignedWorkplace = antData.assignedWorkplace;
+            health = antData.health;
+        }
+    }
+
+    /// IClickable
+
+    public void OnClick()
+    {
+        Debug.Log($"Ant {antName} clicked.");
+    }
+
+    public ClickableData GetClickableData()
+    {
+        return new ClickableData
+        {
+            Name = this.antName,
+            Type = "Ant",
+            Description = $"An ant currently in state: {currentState}",
+            Level = 1,
+            Icon = null, // Assign appropriate icon here
+            Stats = new System.Collections.Generic.Dictionary<string, string>
+            {
+                { "State", currentState.ToString() },
+                { "Health", health.ToString() },
+                { "Carried Resources", carriedResources.ToString() }
+                // Add more stats as needed
+            }
         };
     }
 }

@@ -1,17 +1,58 @@
 using UnityEngine;
 
-public class House : MonoBehaviour/*, ISaveable, IUpgradeable*/
+public class House : MonoBehaviour, ISaveable, IClickable
 {
-    //[SerializeField] private string houseName = "Dom";
-    //[SerializeField] private int level = 1;
-    //[SerializeField] private int capacity = 1; // max 3 levels, each level adds one more capacity and one floor
-    // if reached max level, disable upgrade button in UI
-    // and show "Max Level Reached" message
-    // also with each level increase, change the house appearance (add more floors)
-    // lastly, on max level, add one storage space for resources
+    [Header("House Properties")]
+    [SerializeField] private string houseName = "Ant House";
+    [SerializeField] private string houseDescription = "A cozy house for ants.";
+    [SerializeField] private int level = 1;
 
-    // Properties for AI
-    //public string HouseName => houseName;
-    //public int Level => level;
-    //public int Capacity => capacity;
+    public string HouseName => houseName;
+    public string HouseDescription => houseDescription;
+    public int Level
+    {
+           get { return level; }
+        set { level = value; }
+    }
+
+    object ISaveable.GetSaveData()
+    {
+        return new HouseData
+        {
+            Name = this.HouseName,
+            Description = this.HouseDescription,
+            Level = this.Level
+        };
+    }
+    void ISaveable.LoadDataFromSave(object data)
+    {
+        if (data is HouseData houseData)
+        {
+            this.houseName = houseData.Name;
+            this.houseDescription = houseData.Description;
+            this.Level = houseData.Level;
+        }
+    }
+
+    public void OnClick()
+    {
+        Debug.Log($"House {HouseName} clicked.");
+    }
+
+    public ClickableData GetClickableData()
+    {
+        return new ClickableData
+        {
+            Name = this.HouseName,
+            Type = "House",
+            Description = this.HouseDescription,
+            Level = this.Level,
+            Icon = null, // Assign appropriate icon here
+            Stats = new System.Collections.Generic.Dictionary<string, string>
+            {
+                { "Level", Level.ToString() }
+                // Add more stats as needed
+            }
+        };
+    }
 }

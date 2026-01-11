@@ -7,6 +7,7 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
     [SerializeField] private string description = "Opis miejsca pracy.";
     [SerializeField] private float baseIncomePerSecond = 1f;
     [SerializeField] private bool generatesIncome = true; // set to false if this workplace does not generate pheromone income
+    [SerializeField] private bool isActive = true;
     [SerializeField] private WorkplaceType workplaceType;
     [SerializeField] private int capacity = 1;
     [SerializeField] private int currentEmployees = 0;
@@ -18,10 +19,14 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
     private PassiveIncomeSource incomeSource;
     private bool isRegistered = false;
 
+
     // Properties dla AI
     public string WorkplaceName => workplaceName;
     public string Description => description;
-    public bool IsActive => incomeSource?.IsActive ?? false;
+    public bool IsActive { 
+        get { return isActive; } 
+        set { isActive = value; }
+    }
     public float CurrentIncome => incomeSource?.GetIncomePerSecond() ?? 0f;
     public int Capacity => capacity;
     public int CurrentEmployees
@@ -104,6 +109,20 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
             level = this.level
         };
     }
+
+    public void LoadDataFromSave(object data)
+    {
+        if (data is WorkplaceData workplaceData)
+        {
+            this.workplaceName = workplaceData.workplaceName;
+            this.baseIncomePerSecond = workplaceData.baseIncomePerSecond;
+            this.generatesIncome = workplaceData.generatesIncome;
+            this.IsActive = workplaceData.isActive;
+            this.workplaceType = workplaceData.workplaceType;
+            this.capacity = workplaceData.capacity;
+            this.Level = workplaceData.level;
+        }
+    }
     /// Aktywuje/dezaktywuje generowanie dochodu
     public void SetIncomeActive(bool active)
     {
@@ -135,7 +154,6 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
         {
             { "Dochód", $"{CurrentIncome}/s" },
             { "Status", IsActive ? "Aktywne" : "Nieaktywne" },
-            { "Poziom", level.ToString() },
             { "Pojemnoœæ", $"{CurrentEmployees}/{Capacity}" }
         };
         return new ClickableData
@@ -143,6 +161,7 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
             Name = workplaceName,
             Type = workplaceType.ToString(),
             Description = description,
+            Level = this.Level,
             Icon = null, // Mo¿na przypisaæ ikonê miejsca pracy tutaj
             Stats = stats
         };
