@@ -173,6 +173,7 @@ public class GameState : MonoBehaviour
             gameplayCanvasManager.TogglePheromoneShop(true);
         else if (previousState == GameStates.QueenShop && gameplayCanvasManager != null)
             gameplayCanvasManager.TogglePheromoneShop(false);
+
     }
 
     private void UpdateComponentsStates()
@@ -189,8 +190,15 @@ public class GameState : MonoBehaviour
     {
         clickable.OnClick();
         Debug.Log($"Clicked on: {data.Name} of type {data.Type}");
-
-        hudManager.ShowObjectInfo(data);
+        // Identify the type of clickable and perform actions accordingly, for now just two types - queen and structure
+        if (clickable is QueenPheromoneShop)
+        {
+            SetGameState(GameStates.QueenShop);
+        }
+        else 
+        {
+            hudManager.ShowObjectInfo(clickable, data);
+        }
     }
     // podpina prefaba struktury i tunelu a potem przekazuje to do PlaceDownStructure
     public void SetPrefab(GameObject prefab, int width, int height)

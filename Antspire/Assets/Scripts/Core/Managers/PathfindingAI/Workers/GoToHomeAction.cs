@@ -38,7 +38,6 @@ public partial class GoToHomeAction : Action
 
         if (Vector3.Distance(Self.Value.transform.position, Home.Value.transform.position) < 3f)
         {
-              
             return Status.Success;
         }
         return Status.Running;
