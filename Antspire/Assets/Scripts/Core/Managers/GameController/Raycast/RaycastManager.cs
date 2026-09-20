@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.InputSystem;
 
 public class RaycastManager : MonoBehaviour
 {
@@ -9,9 +10,9 @@ public class RaycastManager : MonoBehaviour
     [SerializeField] Camera playerCamera;
 
     // Eventy
-    public event System.Action<GameObject> OnHoverEnter;    // Najecha³ na obiekt
-    public event System.Action<GameObject> OnHoverExit;     // Zjecha³ z obiektu
-    public event System.Action<IClickable, ClickableData> OnClickableClicked;         // Klikn¹³ obiekt
+    public event System.Action<GameObject> OnHoverEnter;    // Najechaï¿½ na obiekt
+    public event System.Action<GameObject> OnHoverExit;     // Zjechaï¿½ z obiektu
+    public event System.Action<IClickable, ClickableData> OnClickableClicked;         // Kliknï¿½ï¿½ obiekt
 
     GameObject currentHoveredObject;
     GameObject previousHoveredObject;
@@ -31,17 +32,17 @@ public class RaycastManager : MonoBehaviour
 
         GameObject objectUnderCursor = success ? hitObject : null;
 
-        // Jeœli obiekt pod kursorem siê zmieni³ (w stosunku do obecnego hoverowanego)
+        // Jeï¿½li obiekt pod kursorem siï¿½ zmieniï¿½ (w stosunku do obecnego hoverowanego)
         if (objectUnderCursor != currentHoveredObject)
         {
-            // Jeœli by³ poprzedni obiekt, to wywo³aj Exit
+            // Jeï¿½li byï¿½ poprzedni obiekt, to wywoï¿½aj Exit
             if (currentHoveredObject != null)
             {
                 
                 OnHoverExit?.Invoke(currentHoveredObject);
             }
 
-            // Jeœli teraz jest obiekt, to wywo³aj Enter
+            // Jeï¿½li teraz jest obiekt, to wywoï¿½aj Enter
             if (objectUnderCursor != null)
             {
                 
@@ -55,7 +56,8 @@ public class RaycastManager : MonoBehaviour
 
     private (bool, GameObject) GetRaycastHitObject()
     {
-        Ray ray = playerCamera.ScreenPointToRay(Input.mousePosition);
+        Vector2 mousePos = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
+        Ray ray = playerCamera.ScreenPointToRay(mousePos);
         RaycastHit hit;
         if (Physics.Raycast(ray, out hit, raycastDistance, interactableLayers))
         {

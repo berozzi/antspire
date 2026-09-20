@@ -3,6 +3,7 @@ using UnityEngine.UI;
 
 public class QueenPheromoneShop : MonoBehaviour, IClickable
 {
+    // skrypt w ramach testowych dzięki czemu będzie można łatwo spawnować workerów
     [SerializeField] private GameObject queenButton;
     private Button actualButton;
     [SerializeField] private GameObject antWorkerPrefab;

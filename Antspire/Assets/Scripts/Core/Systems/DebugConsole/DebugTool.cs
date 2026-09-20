@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using System.Collections.Generic;
 using System;
 using System.Linq;
@@ -70,8 +71,11 @@ public class AdvancedDebugConsole : MonoBehaviour
 
     void Update()
     {
-        // Otwieranie konsoli - tylko gdy jest zamkniêta
-        if (!showConsole && Input.GetKeyDown(toggleKey))
+        var kb = Keyboard.current;
+        if (kb == null) return;
+
+        // Otwieranie konsoli - tylko gdy jest zamkniÄ™ta
+        if (!showConsole && kb.backquoteKey.wasPressedThisFrame)
         {
             showConsole = true;
             inputBuffer = "";
@@ -80,7 +84,7 @@ public class AdvancedDebugConsole : MonoBehaviour
         }
 
         // Zamykanie konsoli - tylko gdy jest otwarta
-        if (showConsole && Input.GetKeyDown(closeKey))
+        if (showConsole && kb.semicolonKey.wasPressedThisFrame)
         {
             showConsole = false;
             Debug.Log($"Console closed with {closeKey}");
@@ -88,7 +92,7 @@ public class AdvancedDebugConsole : MonoBehaviour
         }
 
         // Wykonywanie komendy - tylko gdy konsola jest otwarta
-        if (showConsole && Input.GetKeyDown(executeKey) && !string.IsNullOrEmpty(inputBuffer))
+        if (showConsole && kb.enterKey.wasPressedThisFrame && !string.IsNullOrEmpty(inputBuffer))
         {
             ExecuteCommand(inputBuffer);
             inputBuffer = "";
@@ -305,10 +309,10 @@ public class AdvancedDebugConsole : MonoBehaviour
     {
         float consoleHeight = Screen.height * 0.4f;
 
-        // T³o konsoli
+        // Tï¿½o konsoli
         GUI.Box(new Rect(0, 0, Screen.width, consoleHeight), "");
 
-        // Historia wiadomoœci
+        // Historia wiadomoï¿½ci
         GUILayout.BeginArea(new Rect(10, 10, Screen.width - 20, consoleHeight - 50));
         scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(consoleHeight - 60));
 
@@ -327,7 +331,7 @@ public class AdvancedDebugConsole : MonoBehaviour
         GUI.SetNextControlName("ConsoleInput");
         inputBuffer = GUILayout.TextField(inputBuffer, GUILayout.ExpandWidth(true));
 
-        // Przycisk wysy³ania
+        // Przycisk wysyï¿½ania
         if (GUILayout.Button("SEND", GUILayout.Width(60)))
         {
             if (!string.IsNullOrEmpty(inputBuffer))
@@ -346,7 +350,7 @@ public class AdvancedDebugConsole : MonoBehaviour
             GUI.FocusControl("ConsoleInput");
         }
 
-        // OBS£UGA ENTER W GUI
+        // OBSï¿½UGA ENTER W GUI
         if (Event.current.type == EventType.KeyDown &&
             Event.current.keyCode == executeKey &&
             !string.IsNullOrEmpty(inputBuffer) &&
@@ -357,7 +361,7 @@ public class AdvancedDebugConsole : MonoBehaviour
             Event.current.Use();
         }
 
-        // OBS£UGA ESC W GUI - dodajemy tu równie¿
+        // OBSï¿½UGA ESC W GUI - dodajemy tu rï¿½wnieï¿½
         if (Event.current.type == EventType.KeyDown && Event.current.keyCode == closeKey)
         {
             showConsole = false;

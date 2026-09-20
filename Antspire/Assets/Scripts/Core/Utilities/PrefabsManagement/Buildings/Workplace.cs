@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class Workplace : MonoBehaviour, ISaveable, IClickable
 {
-    [Header("Dochód Pasywny")]
+    [Header("Dochï¿½d Pasywny")]
     [SerializeField] private string workplaceName = "Miejsce Pracy";
     [SerializeField] private string description = "Opis miejsca pracy.";
     [SerializeField] private float baseIncomePerSecond = 1f;
@@ -14,7 +14,7 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
     [SerializeField] private int level = 1;
 
     [Header("Referencje")]
-    [SerializeField] private PheromoneManager pheromoneManager;
+    [SerializeField] private ProductionManager productionManager;
 
     private PassiveIncomeSource incomeSource;
     private bool isRegistered = false;
@@ -50,39 +50,42 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
     {
         if (!generatesIncome) return;
 
-        // Utwórz Ÿród³o dochodu
+        if (productionManager == null)
+            productionManager = FindAnyObjectByType<ProductionManager>();
+
+        // Utwï¿½rz ï¿½rï¿½dï¿½o dochodu
         incomeSource = new PassiveIncomeSource(workplaceName, baseIncomePerSecond);
 
-        // Zarejestruj siê w managerze
-        if (pheromoneManager != null)
+        // Zarejestruj siï¿½ w managerze
+        if (productionManager != null)
         {
-            pheromoneManager.RegisterPassiveSource(incomeSource);
+            productionManager.RegisterPassiveSource(incomeSource);
             isRegistered = true;
         }
         else
         {
-            Debug.LogWarning($"PheromoneManager nie przypisany do Workplace: {workplaceName}");
+            Debug.LogWarning($"ProductionManager nie przypisany do Workplace: {workplaceName}");
         }
     }
 
-    /// Ulepsza dochód z tego miejsca pracy
+    /// Ulepsza dochï¿½d z tego miejsca pracy
     public void UpgradeIncome(float upgradeAmount)
     {
         if (incomeSource != null)
         {
             incomeSource.UpgradeBaseIncome(upgradeAmount);
-            Debug.Log($"Ulepszono {workplaceName}. Nowy dochód: {incomeSource.GetIncomePerSecond()}/s");
+            Debug.Log($"Ulepszono {workplaceName}. Nowy dochï¿½d: {incomeSource.GetIncomePerSecond()}/s");
         }
     }
    
-    /// Ustawia now¹ bazow¹ wartoœæ dochodu
+    /// Ustawia nowï¿½ bazowï¿½ wartoï¿½ï¿½ dochodu
     public void SetBaseIncome(float newIncome)
     {
         if (incomeSource != null)
         {
-            // Mo¿emy dodaæ logikê obliczania ró¿nicy i aktualizacji
+            // Moï¿½emy dodaï¿½ logikï¿½ obliczania rï¿½nicy i aktualizacji
             baseIncomePerSecond = newIncome;
-            // Tutaj potrzebowalibyœmy metody do aktualizacji w PassiveIncomeSource
+            // Tutaj potrzebowalibyï¿½my metody do aktualizacji w PassiveIncomeSource
         }
     }
     
@@ -129,16 +132,19 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
         if (incomeSource != null)
         {
             incomeSource.SetActive(active);
-            Debug.Log($"{workplaceName} - generowanie dochodu: {(active ? "AKTYWNE" : "WY£¥CZONE")}");
+            Debug.Log($"{workplaceName} - generowanie dochodu: {(active ? "AKTYWNE" : "WYï¿½ï¿½CZONE")}");
         }
     }
     void OnDestroy()
     {
         SaveManager.Unregister(this);
-        // Wyrejestruj Ÿród³o przy zniszczeniu
-        if (isRegistered && pheromoneManager != null && incomeSource != null)
+        if (productionManager == null)
+            productionManager = FindAnyObjectByType<ProductionManager>();
+
+        // Wyrejestruj ï¿½rï¿½dï¿½o przy zniszczeniu
+        if (isRegistered && productionManager != null && incomeSource != null)
         {
-            pheromoneManager.UnregisterPassiveSource(incomeSource);
+            productionManager.UnregisterPassiveSource(incomeSource);
         }
     }
 
@@ -147,14 +153,14 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
     {
         Debug.Log($"Clicked on workplace: {workplaceName}");
     }
-    /// Zwraca dane do wyœwietlenia w UI po klikniêciu
+    /// Zwraca dane do wyï¿½wietlenia w UI po klikniï¿½ciu
     public ClickableData GetClickableData()
     {
         var stats = new System.Collections.Generic.Dictionary<string, string>
         {
-            { "Dochód", $"{CurrentIncome}/s" },
+            { "Dochï¿½d", $"{CurrentIncome}/s" },
             { "Status", IsActive ? "Aktywne" : "Nieaktywne" },
-            { "Pojemnoœæ", $"{CurrentEmployees}/{Capacity}" }
+            { "Pojemnoï¿½ï¿½", $"{CurrentEmployees}/{Capacity}" }
         };
         return new ClickableData
         {
@@ -162,7 +168,7 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
             Type = workplaceType.ToString(),
             Description = description,
             Level = this.Level,
-            Icon = null, // Mo¿na przypisaæ ikonê miejsca pracy tutaj
+            Icon = null, // Moï¿½na przypisaï¿½ ikonï¿½ miejsca pracy tutaj
             Stats = stats
         };
     }

@@ -15,6 +15,10 @@ public class BuildingTypesData : ScriptableObject
 
 public enum BuildingType
 {
+    House,
+    Farm,
+    Barracks,
+    Tower,
     Tunnel,
     Residential,
     Mine,

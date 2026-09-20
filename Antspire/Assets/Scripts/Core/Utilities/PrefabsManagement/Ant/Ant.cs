@@ -3,7 +3,6 @@ using UnityEngine;
 public class Ant : MonoBehaviour, ISaveable, IClickable
 {
     public string antName;
-    public AntState currentState;
     public Vector2Int gridPosition;
     public Vector2Int targetPosition;
     public House assignedHouse;
@@ -50,11 +49,11 @@ public class Ant : MonoBehaviour, ISaveable, IClickable
         workplace.CurrentEmployees += 1;
         Debug.Log($"Ant {name} assigned to workplace {workplace.WorkplaceName}");
     }
-    public void SetState(AntState newState)
-    {
-        currentState = newState;
-        //Debug.Log($"Ant {name} changed state to {newState}");
-    }
+    //public void SetState(AntState newState)
+    //{
+    //    currentState = newState;
+    //    //Debug.Log($"Ant {name} changed state to {newState}");
+    //}
     
     public void SetPosition()
     {
@@ -69,7 +68,7 @@ public class Ant : MonoBehaviour, ISaveable, IClickable
         {
             name = antName,
             position = gridPosition,
-            state = currentState,
+            //state = currentState,
             assignedHouse = assignedHouse,
             assignedWorkplace = assignedWorkplace,
             health = health,
@@ -82,7 +81,7 @@ public class Ant : MonoBehaviour, ISaveable, IClickable
         {
             antName = antData.name;
             gridPosition = antData.position;
-            currentState = antData.state;
+            //currentState = antData.state;
             assignedHouse = antData.assignedHouse;
             assignedWorkplace = antData.assignedWorkplace;
             health = antData.health;
@@ -102,12 +101,12 @@ public class Ant : MonoBehaviour, ISaveable, IClickable
         {
             Name = this.antName,
             Type = "Ant",
-            Description = $"An ant currently in state: {currentState}",
+            Description = $"An ant currently in state: ",
             Level = 1,
             Icon = null, // Assign appropriate icon here
             Stats = new System.Collections.Generic.Dictionary<string, string>
             {
-                { "State", currentState.ToString() },
+                //{ "State", currentState.ToString() },
                 { "Health", health.ToString() },
                 { "Carried Resources", carriedResources.ToString() }
                 // Add more stats as needed

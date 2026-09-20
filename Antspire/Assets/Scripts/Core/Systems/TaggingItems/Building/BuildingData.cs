@@ -9,11 +9,3 @@ public class BuildingData : MonoBehaviour
     public bool isInUse;
     public string prefabName;
 }
-
-public enum BuildingType
-{
-    House = 0,
-    Farm = 1,
-    Barracks = 2,
-    Tower = 3
-}

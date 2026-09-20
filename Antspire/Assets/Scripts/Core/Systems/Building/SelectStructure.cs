@@ -6,8 +6,7 @@ public class SelectStructure : MonoBehaviour
     [SerializeField] private GameObject buildingPrefab;
     Button button;
 
-    [SerializeField] private PlaceDownStructure placeDownStructure;
-    [SerializeField] private GameState gameState;
+    [SerializeField] private GameManager gameManager;
     [SerializeField] private GameplayCanvasManager gameplayCanvas;
     [SerializeField] private int buildingWidth = 1;
     [SerializeField] private int buildingHeight = 1;
@@ -15,8 +14,7 @@ public class SelectStructure : MonoBehaviour
     void Start()
     {
         button = GetComponent<Button>();
-        placeDownStructure = FindAnyObjectByType<PlaceDownStructure>();
-        gameState = FindAnyObjectByType<GameState>();
+        gameManager = FindAnyObjectByType<GameManager>();
 
         CheckMissingReferences();
 
@@ -25,11 +23,11 @@ public class SelectStructure : MonoBehaviour
 
     private void OnBuildingSelected()
     {
-        if (placeDownStructure != null && buildingPrefab != null)
+        if (buildingPrefab != null)
         {
             Debug.Log($"Selected building prefab: {buildingPrefab.name}");
-            gameState.SetPrefab(buildingPrefab, buildingWidth, buildingHeight);
-            gameState.TogglePanel(GameStates.BuildMode);
+            gameManager.SetPrefab(buildingPrefab, buildingWidth, buildingHeight);
+            gameManager.TogglePanel(GameStates.BuildMode);
             gameplayCanvas.CloseAllSubpanels();
         }
     }
@@ -44,13 +42,9 @@ public class SelectStructure : MonoBehaviour
         {
             Debug.LogError("SelectStructure: Building prefab reference is missing.", this);
         }
-        if (placeDownStructure == null)
+        if (gameManager == null)
         {
-            Debug.LogError("SelectStructure: PlaceDownStructure reference is missing.", this);
-        }
-        if (gameState == null)
-        {
-            Debug.LogError("SelectStructure: GameState reference is missing.", this);
+            Debug.LogError("SelectStructure: GameManager reference is missing.", this);
         }
         if (gameplayCanvas == null)
         {

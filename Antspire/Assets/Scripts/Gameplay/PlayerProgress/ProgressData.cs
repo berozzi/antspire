@@ -1,10 +1,9 @@
 using System.Collections.Generic;
-using TMPro.Examples;
 using UnityEngine;
 
 public class ProgressData
 {
-    // Rozdzia³y fabularne
+    // Rozdziaï¿½y fabularne
     public int currentChapter = 1;
     public float chapterProgress = 0f; // 0-100%
     public bool[] completedQuests = new bool[20];
@@ -28,7 +27,7 @@ public class ProgressData
     public float diplomacyScore = 50f; // 0-100
     
 
-    // Postêpy technologiczne
+    // Postï¿½py technologiczne
     //public List<TechType> unlockedTechs = new();
     public int researchPoints = 0;
 

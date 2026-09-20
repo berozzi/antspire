@@ -7,7 +7,7 @@ public class SaveManager : MonoBehaviour
 {
 
     string customPath = "C:/Users/GracjanCode/Desktop/Ants/Saves/gameSave.json";
-    // HashSet = brak duplikatów, szybkie dodawanie/usuwanie
+    // HashSet = brak duplikatï¿½w, szybkie dodawanie/usuwanie
     private static readonly HashSet<ISaveable> saveables = new();
 
     public static void Register(ISaveable s)
@@ -24,11 +24,11 @@ public class SaveManager : MonoBehaviour
     // Wszystkie saveable
     public static IEnumerable<ISaveable> All => saveables;
 
-    // Metoda zapisuj¹ca wszystko
+    // Metoda zapisujï¿½ca wszystko
     public static GameSave SaveAll()
     {
         GameSave gameSave = GameSave.Instance;
-        // GameSave gameSave = GameSave.Instance.Initialize(); jeœli tworzê nowego save'a
+        // GameSave gameSave = GameSave.Instance.Initialize(); jeï¿½li tworzï¿½ nowego save'a
 
         foreach (ISaveable saveable in saveables)
         {
@@ -47,7 +47,7 @@ public class SaveManager : MonoBehaviour
     }
     public Vector2Int GetCurrentPosition(Vector3 pos)
     {
-        GenerateVirtualGrid gridManager = FindAnyObjectByType<GenerateVirtualGrid>();
+        GridManager gridManager = FindAnyObjectByType<GridManager>();
         if (gridManager != null)
         {
             return gridManager.WorldToGrid(pos);
@@ -66,10 +66,31 @@ public class SaveManager : MonoBehaviour
         File.WriteAllText(customPath, json);
         Debug.Log("Saved Game");
     }
-}
-// wystarczy to jedynie poszerzaæ w switchu o kolejne przypadki
-// w GameSave dodawaæ listy do przechowywania danych
-// i tworzyæ odpowiednie klasy danych do przechowywania informacji o obiektach
-// to jest bardzo elastyczne podejœcie dziêki któremu unikamy niepotrzebnego kodu oraz dziedziczenia
 
-// ka¿dy nastêpny typ obiektu Saveable wymaga jedynie dodania kolejnego case'a w switchu powy¿ej oraz rejestracji
+    public void LoadGame()
+    {
+        if (!File.Exists(customPath))
+        {
+            Debug.LogWarning("No save file found at: " + customPath);
+            return;
+        }
+
+        string json = File.ReadAllText(customPath);
+        GameSave loadedGameSave = JsonUtility.FromJson<GameSave>(json);
+        if (loadedGameSave == null)
+        {
+            Debug.LogWarning("Save file is empty or invalid: " + customPath);
+            return;
+        }
+
+        GameSave.Instance.player = loadedGameSave.player;
+        GameSave.Instance.resources = loadedGameSave.resources;
+        Debug.Log("Game Loaded with New Input System!");
+    }
+}
+// wystarczy to jedynie poszerzaï¿½ w switchu o kolejne przypadki
+// w GameSave dodawaï¿½ listy do przechowywania danych
+// i tworzyï¿½ odpowiednie klasy danych do przechowywania informacji o obiektach
+// to jest bardzo elastyczne podejï¿½cie dziï¿½ki ktï¿½remu unikamy niepotrzebnego kodu oraz dziedziczenia
+
+// kaï¿½dy nastï¿½pny typ obiektu Saveable wymaga jedynie dodania kolejnego case'a w switchu powyï¿½ej oraz rejestracji

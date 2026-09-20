@@ -16,6 +16,11 @@ public class MainMenuManager : MonoBehaviour
         SceneManager.LoadScene("3_Settings");
     }
 
+    public void LoadGame()
+    {         // Zapisz nazwê sceny do za³adowania w PlayerPrefs
+        
+    }
+
     public void QuitGame()
     {
         Application.Quit();

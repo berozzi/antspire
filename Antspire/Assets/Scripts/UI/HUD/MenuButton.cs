@@ -18,7 +18,7 @@ public class MenuButton : MonoBehaviour
         }
         if (button != null && hudManager != null && saveManager != null)
         {
-            // Przypisz odpowiednie metody w zale¿noœci od nazwy przycisku
+            // Przypisz odpowiednie metody w zaleï¿½noï¿½ci od nazwy przycisku
             switch (gameObject.name)
             {
                 case string name when name.Contains("MenuButton"):
@@ -41,7 +41,7 @@ public class MenuButton : MonoBehaviour
                     button.onClick.AddListener(hudManager.HideObjectInfo);
                     break;
                 case string name when name.Contains("Load"):
-                    button.onClick.AddListener(hudManager.LoadGame);
+                    button.onClick.AddListener(saveManager.LoadGame);
                     break;
             }
         }
