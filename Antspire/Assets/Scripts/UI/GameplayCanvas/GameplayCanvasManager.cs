@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class GameplayCanvasManager : MonoBehaviour
 {
-    [SerializeField] GameState gameState;
+    [SerializeField] GameManager gameManager;
     [Header("UI Panels")]
     [SerializeField] GameObject techTreePanel;
     [SerializeField] GameObject warPanel;
@@ -14,23 +14,23 @@ public class GameplayCanvasManager : MonoBehaviour
 
     private void Awake()
     {
-        gameState = FindAnyObjectByType<GameState>();
+        gameManager = FindAnyObjectByType<GameManager>();
 
-        if (gameState != null)
+        if (gameManager != null)
         {
-            gameState.OnTechTreeToggled += OnTechTreeToggled;
-            gameState.OnWarPanelToggled += OnWarPanelToggled;
-            gameState.OnStructureMenuToggled += OnStructureMenuToggled;
+            gameManager.OnTechTreeToggled += OnTechTreeToggled;
+            gameManager.OnWarPanelToggled += OnWarPanelToggled;
+            gameManager.OnStructureMenuToggled += OnStructureMenuToggled;
         }
     }
 
     private void OnDestroy()
     {
-        if (gameState != null)
+        if (gameManager != null)
         {
-            gameState.OnTechTreeToggled -= OnTechTreeToggled;
-            gameState.OnWarPanelToggled -= OnWarPanelToggled;
-            gameState.OnStructureMenuToggled -= OnStructureMenuToggled;
+            gameManager.OnTechTreeToggled -= OnTechTreeToggled;
+            gameManager.OnWarPanelToggled -= OnWarPanelToggled;
+            gameManager.OnStructureMenuToggled -= OnStructureMenuToggled;
         }
     }
 
@@ -100,6 +100,6 @@ public class GameplayCanvasManager : MonoBehaviour
         structureCommonMenu.SetActive(false);
         tunnelMenu.SetActive(false);
         // healthStructureMenu.SetActive(false);
-        // Dodaj tutaj zamykanie innych podpaneli, jeœli istniej¹
+        // Dodaj tutaj zamykanie innych podpaneli, jeï¿½li istniejï¿½
     }
 }

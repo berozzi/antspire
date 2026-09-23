@@ -6,8 +6,6 @@ using UnityEngine;
 public class ResourceManager : MonoBehaviour
 {
     [Header("Startowe zasoby")]
-    [SerializeField] private int startingWood = 0;
-    [SerializeField] private int startingStone = 0;
 
     private readonly Dictionary<ResourceType, int> amounts = new Dictionary<ResourceType, int>();
 
@@ -17,9 +15,6 @@ public class ResourceManager : MonoBehaviour
     {
         foreach (ResourceType type in Enum.GetValues(typeof(ResourceType)))
             amounts[type] = 0;
-
-        amounts[ResourceType.Wood] = startingWood;
-        amounts[ResourceType.Stone] = startingStone;
 
         // Zasiej zasoby z zapisu, jeśli istnieją.
         GameSave gameSave = GameSave.Instance;

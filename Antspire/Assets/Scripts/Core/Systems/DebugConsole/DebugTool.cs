@@ -112,7 +112,7 @@ public class AdvancedDebugConsole : MonoBehaviour
         // Ant commands
         RegisterCommand("summon", SummonAnt);
         RegisterCommand("summon_ant", SummonAnt);
-        RegisterCommand("ants_clear", ClearAnts);
+        //RegisterCommand("ants_clear", ClearAnts);
 
         // System commands
         RegisterCommand("help", ShowHelp);
@@ -252,23 +252,23 @@ public class AdvancedDebugConsole : MonoBehaviour
 
         LogSuccess($"Summoned ant at: {spawnPosition}");
     }
+    // nie działająca metoda czyszcząca mrówki - poprawię później
+    //private void ClearAnts(string[] args)
+    //{
+    //    GameObject[] allObjects = FindObjectsByType<GameObject>(FindObjectsSortMode.None);
+    //    int antCount = 0;
 
-    private void ClearAnts(string[] args)
-    {
-        GameObject[] allObjects = FindObjectsByType<GameObject>(FindObjectsSortMode.None);
-        int antCount = 0;
+    //    foreach (GameObject obj in allObjects)
+    //    {
+    //        if (obj.name.StartsWith("Ant_"))
+    //        {
+    //            Destroy(obj);
+    //            antCount++;
+    //        }
+    //    }
 
-        foreach (GameObject obj in allObjects)
-        {
-            if (obj.name.StartsWith("Ant_"))
-            {
-                Destroy(obj);
-                antCount++;
-            }
-        }
-
-        LogSuccess($"Cleared {antCount} ants");
-    }
+    //    LogSuccess($"Cleared {antCount} ants");
+    //}
 
     private void ShowHelp(string[] args)
     {

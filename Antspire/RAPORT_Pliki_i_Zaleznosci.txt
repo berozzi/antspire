@@ -1,0 +1,246 @@
+================================================================================
+ RAPORT: PLIKI + DIAGRAM ZALEŻNOŚCI / KLAS — CYKL ŻYCIA MROWKI-ROBOTNICY
+================================================================================
+ Data: 22.09.2026
+ Projekt: Antspire (Unity)
+ Obszar: transport + zbieranie zasobów, pełny cykl biologiczny,
+ pełny przepływ materiałów (Factorio-like + city builder).
+
+ Spis treści:
+   1. Drzewo plików (nowe / zmodyfikowane)
+   2. Diagram zależności (skrypt -> skrypt)
+   3. Diagram klas (uproszczony)
+   4. Tabela "używa / jest używany przez"
+   5. Przepływ danych w runtime
+   6. Interfejsy i wzorce
+
+--------------------------------------------------------------------------------
+ 1. DRZEWO PLIKÓW
+--------------------------------------------------------------------------------
+
+ NOWE PLIKI (utworzone w tej iteracji):
+
+ Assets/Scripts/Core/Systems/Logistics/
+   ItemBuffer.cs
+       - Kontener zasobów scalanych po typie, o pojemności 'Capacity' sztuk.
+       - Metody: TotalUnits, FreeSpace, GetAmount(), Add(), Remove(), Resize(),
+         BufferName (diagnostyka/UI).
+   ILogisticsEndpoint.cs
+       - INTERFEJS punktu logistycznego (budynek / magazyn / gniazdo).
+       - EndpointName, GetWorldPosition, CanProvide, CanAccept, GetAvailable,
+         GetShortfall, GiveTo, TakeFrom, GetTradedResources, KeepSurplusOf.
+   LogisticsJob.cs
+       - Zadanie dla mrówki: enum JobType { Transport, Forage }
+       - Pola: Source, Target, Resource, Amount, ClaimedBy (AntWorker),
+         SourceWorldPosition, TargetWorldPosition, Label.
+   LogisticsManager.cs
+       - 'JobBoard' — cykliczny skaner punktów, tworzenie i przydzielanie zadań.
+       - NIE singleton: instancja znajdowana przez FindAnyObjectByType.
+
+ Assets/Scripts/Core/Systems/Building/
+   ExtractionBuilding.cs   (ILogisticsEndpoint, ISaveable)
+       - Wydobywa zasób wg SO Extraction -> bufor wyjściowy.
+       - Tylko dostarcza (CanAccept=false).
+   ProductionBuilding.cs   (ILogisticsEndpoint, ISaveable)
+       - Bufor wejściowy -> (Producer SO) -> bufor wyjściowy.
+       - Generuje postulaty na wejścia i oddaje wyjścia.
+   StorageBuilding.cs      (ILogisticsEndpoint, ISaveable)
+       - Magazyn zdefiniowanych zasobów; dąży do 'restockTarget',
+         nadmiar ponad 'keepSurplus' oddaje do gniazda.
+
+ Assets/Scripts/Core/Systems/AI/
+   AntSpeciesConfig.cs     (ScriptableObject)
+       - Wszystkie parametry balansowe gatunku (ruch, ładunek, biologia,
+         lęgi, wyprawy, pojemność gniazda).
+   AntState.cs
+       - enum stanów FSM: Idle, MovingToPickup, PickingUp, MovingToDeliver,
+         Delivering, MovingToRest, Resting, MovingToExit, Foraging,
+         ReturningWithLoot, Dead.
+   AntWorker.cs            (MonoBehaviour)
+       - Maszyna stanów + ruch (NavMeshAgent / fallback) + biologia.
+   ColonyManager.cs        (MonoBehaviour)
+       - Populacja: rejestr robotnic (statyczna lista, wzorzec SaveManager),
+         kolejka lęgowa (jajo -> larwa -> poczwarka -> wyląg).
+   Nest.cs                 (ILogisticsEndpoint)
+       - Gniazdo: gatePoint, hatchPoint, stockpile (deleguje do
+         ResourceManager), TryConsumeFood(), Config (AntSpeciesConfig).
+
+ ZMIENIONE PLIKI (istniejące):
+
+ Assets/Scripts/Core/Managers/Resource/ResourceManager.cs
+       - Z pustego placu budowy: GLOBALNY STOCKPILE kolonii (ItemBuffer)
+         + defaultFood + API: Add/Remove/TryConsume/GetAmount/HasFreeSpace.
+ Assets/Scripts/Core/Utilities/PrefabsManagement/Ant/Ant.cs
+       - Tożsamość + dane BIOLOGICZNE (age/hunger/energy) + stan (AntState)
+         + ładunek Carried (ItemStack) + ISaveable/IClickable.
+         Auto-dodaje komponent AntWorker w Awake.
+ Assets/Scripts/Core/Utilities/SavingGameData/Data/AntData.cs
+       - Nowe pola: age, hunger, energy, currentState (int),
+         carriedResourceName, carriedResourceAmount.
+ Assets/Scripts/Core/Managers/Expedition/ExpeditionManager.cs
+       - + StartForageExpedition(...) z callbackiem i ForageExpeditionResult.
+ Assets/Scripts/Core/Managers/Currency/Pheromones/QueenPheromoneShop.cs
+       - Zakup robotnicy przez ColonyManager.QueueEgg() (zamiast Instantiate),
+         opcjonalny koszt feromonów.
+ Assets/Scripts/Core/Utilities/SavingGameData/SaveManager.cs
+       - + case StructureData -> gameSave.structures.
+ Assets/Scripts/Core/Utilities/SavingGameData/Data/GameSave.cs
+       - + List<StructureData> structures.
+
+--------------------------------------------------------------------------------
+ 2. DIAGRAM ZALEŻNOŚCI (skrypt -> skrypt)
+--------------------------------------------------------------------------------
+ Strzałka "A --> B" znaczy: A posiada referencję do / wywołuje B.
+
+   AntWorker --> Ant.cs                      (tożsamość, dane, ładunek)
+   AntWorker --> AntSpeciesConfig            (balans)
+   AntWorker --> NavMeshAgent                (ruch; Unity.AI)
+   AntWorker --> LogisticsManager            (TryClaimJob / ReleaseJob)
+   AntWorker --> ColonyManager               (register / unregister / death)
+   AntWorker --> Nest                        (odpoczynek, dostawa, wyprawy)
+   AntWorker --> ExpeditionManager           (StartForageExpedition)
+   AntWorker --> LogisticsJob                (aktualne zadanie)
+   AntWorker --> ForageExpeditionResult      (callback wyprawy)
+
+   LogisticsManager --> ILogisticsEndpoint[]    (skan punktów)
+   LogisticsManager --> LogisticsJob[]          (kolejka zadań)
+   LogisticsManager --> Nest                    (cel nadmiarów i wypraw)
+   LogisticsManager --> ColonyManager           (statyczne sprawdzanie wypraw)
+   LogisticsManager --> AntSpeciesConfig        (przez nest.Config)
+
+   ExtractionBuilding --> ILogisticsEndpoint, ISaveable
+        --> ItemBuffer, LogisticsManager, Extraction (SO)
+   ProductionBuilding --> ILogisticsEndpoint, ISaveable
+        --> ItemBuffer (wej./wyj.), LogisticsManager, Producer (SO)
+   StorageBuilding    --> ILogisticsEndpoint, ISaveable
+        --> ItemBuffer, LogisticsManager, ResourceDefinition[]
+
+   Nest --> ILogisticsEndpoint (implementuje)
+   Nest --> ResourceManager (stockpile)
+   Nest --> AntSpeciesConfig
+   Nest --> LogisticsManager (RegisterEndpoint / RegisterNest)
+
+   ColonyManager --> AntWorker    (rejestracja)
+   ColonyManager --> Nest         (pos, food, config)
+   ColonyManager --> AntSpeciesConfig
+
+   ResourceManager --> ItemBuffer, ResourceDefinition
+   QueenPheromoneShop --> ColonyManager, PheromoneManager
+
+--------------------------------------------------------------------------------
+ 3. DIAGRAM KLAS (uproszczony)
+--------------------------------------------------------------------------------
+ (<< I >> = interfejs, Mono = komponent Unity)
+
+                    ┌──────────────────────────────┐
+                    │  Ant  (Mono)                 │
+                    │  << I >> ISaveable, IClickable│
+                    │  age/hunger/energy, Carried   │
+                    └──────────────┬───────────────┘
+                                   │ auto-add (Awake)
+                    ┌──────────────▼───────────────┐
+                    │  AntWorker  (Mono)           │
+                    │  state: AntState  (FSM)      │
+                    │  job: LogisticsJob           │
+                    └──┬──────┬──────┬──────┬──────┘
+                       │      │      │      │
+             AntSpeciesConfig  │      │      │
+                       │      │      │      │
+                     Nest  ColonyManager ExpeditionManager
+                       │      │
+                  ResourceManager (stockpile)
+
+   Po stronie logistyki (punkty na mapie):
+
+      << I >> ILogisticsEndpoint
+       ▲            ▲            ▲            ▲
+       │            │            │            │
+ Extraction   Production   Storage      Nest
+  Building      Building     Building
+
+      LogisticsManager  ==>  List<ILogisticsEndpoint>  (endpoints)
+      LogisticsManager  ==>  List<LogisticsJob>        (pendingJobs)
+
+      LogisticsJob  -->  (Source, Target: ILogisticsEndpoint)
+                      -->  (ClaimedBy: AntWorker)
+                      -->  (Resource: ResourceDefinition)
+
+--------------------------------------------------------------------------------
+ 4. TABELA "UŻYWA / JEST UŻYWANY PRZEZ"
+--------------------------------------------------------------------------------
+ | Skrypt               | Używa                                          | Jest używany przez                          |
+ |----------------------|------------------------------------------------|---------------------------------------------|
+ | LogisticsManager     | ILogisticsEndpoint, LogisticsJob, Nest,        | AntWorker, Nest, Extraction/Production/      |
+ |                      | ColonyManager, AntSpeciesConfig                | StorageBuilding                             |
+ | AntWorker            | Ant, AntSpeciesConfig, LogisticsManager,        | ColonyManager, Ant (auto-add), LogisticsJob  |
+ |                      | ColonyManager, Nest, ExpeditionManager         |                                             |
+ | Nest                 | ResourceManager, LogisticsManager,              | LogisticsManager, ColonyManager,            |
+ |                      | ILogisticsEndpoint, AntSpeciesConfig          | AntWorker, Extract/Product/Storage          |
+ | ResourceManager      | ItemBuffer, ResourceDefinition                 | Nest, ExpeditionManager                     |
+ | ColonyManager        | AntWorker, Nest, AntSpeciesConfig             | AntWorker, QueenPheromoneShop,              |
+ |                      |                                                | LogisticsManager (statycznie)               |
+ | ExpeditionManager    | ResourceDefinition, ForageExpeditionResult    | AntWorker, (dowolne wywołanie Start...)     |
+ | ExtractionBuilding   | ILogisticsEndpoint, ISaveable, ItemBuffer,    | LogisticsManager (jako endpoint), SaveManager|
+ |                      | Extraction, LogisticsManager                  |                                             |
+ | ProductionBuilding   | ILogisticsEndpoint, ISaveable, ItemBuffer x2, | LogisticsManager, SaveManager                |
+ |                      | Producer, LogisticsManager                    |                                             |
+ | StorageBuilding      | ILogisticsEndpoint, ISaveable, ItemBuffer,    | LogisticsManager, SaveManager                |
+ |                      | ResourceDefinition[], LogisticsManager        |                                             |
+ | Ant (Ant.cs)         | AntWorker, AntState, ItemStack, ISaveable,    | GameManager (IClickable), AntWorker,         |
+ |                      | IClickable, House, Workplace, SaveManager    | SaveManager, UI (InfoPanel)                 |
+ | GameSave             | AntData, StructureData, WorkplaceData, ...    | SaveManager                                  |
+ | SaveManager          | ISaveable, GameSave, AntData, StructureData,  | Ant, House, Workplace, budynki              |
+ |                      | WorkplaceData                                 |                                             |
+
+--------------------------------------------------------------------------------
+ 5. PRZEPŁYW DANYCH W RUNTIME
+--------------------------------------------------------------------------------
+ 1) Start sceny:
+    - Nest rejestruje się w LogisticsManager (RegisterEndpoint + RegisterNest).
+    - Extraction/Production/Storage robią to samo przez RegisterEndpoint.
+    - AntWorker: znajduje LogisticsManager/ColonyManager/ExpeditionManager/Nest,
+      rejestruje się w ColonyManager.
+
+ 2) Cyklicznie (co jobScanInterval, domyślnie ~0.75 s):
+    LogisticsManager.ScanForJobs()
+      - KROK 1: każdy 'sink' o GetShortfall(resource) > 0 szuka najbliższego
+                źródła (FindNearestSource: CanProvide + GetAvailable > 0)
+                -> tworzy LogisticsJob (Transport).
+      - KROK 2: każde źródło z nadmiarem (GetAvailable - KeepSurplusOf)
+                wysyła go do gniazda (jeśli stockpile ma wolne miejsce).
+      - KROK 3: jeśli forageResource < forageResourceThreshold i działa
+                cooldown -> LogisticsJob (Forage) do wyjścia gniazda.
+
+ 3) Mrówka (IDLE):
+    logistics.TryClaimJob(this) -> najbliższe zadanie.
+      Transport -> MovingToPickup -> PickingUp (Source.GiveTo)
+                -> MovingToDeliver -> Delivering (Target.TakeFrom)
+      Forage   -> MovingToExit -> Foraging -> ExpeditionManager.StartForageExpedition
+                -> callback -> ReturningWithLoot -> Delivering (nest.TakeFrom)
+
+ 4) Biologia co klatkę: wiek++, głód/energia-- (poza RESTING).
+      Głód <=0 lub wiek>=lifespan -> Die():
+        UnregisterAnt + NotifyAntDeath + Destroy (po 0.5 s).
+
+ 5) Odpoczynek: MovingToRest -> Resting (zjadanie jedzenia, +energia)
+      -> powrót do IDLE.
+
+--------------------------------------------------------------------------------
+ 6. INTERFEJSY I WZORCE PROJEKTOWE
+--------------------------------------------------------------------------------
+ ILogisticsEndpoint  - kontrakt "punkt wymiany surowców". Dzięki niemu
+                       LogisticsManager nie zna konkretnych klas budynków.
+ ISaveable           - już istniejący interfejs (GetSaveData/LoadDataFromSave).
+ IClickable          - już istniejący interfejs (kliknięcia/UI).
+
+ WZORCE:
+ - BRAK SINGLETONÓW w nowym kodzie. Zależności przez [SerializeField]
+   + FindAnyObjectByType (spójnie z resztą projektu) albo przez statyczne
+   rejestry w stylu SaveManager (ColonyManager.AllWorkers).
+ - INTERFEJS / STRATEGIA przy punktach logistycznych (ILogisticsEndpoint).
+ - MASZYNA STANÓW (FSM) w AntWorker z enuma AntState.
+ - STATYCZNY REJESTR (jak SaveManager.saveables) w ColonyManager.allWorkers.
+
+================================================================================
+ KONIEC RAPORTU
+================================================================================

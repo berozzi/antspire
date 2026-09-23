@@ -13,6 +13,7 @@ public class RaycastManager : MonoBehaviour
     public event System.Action<GameObject> OnHoverEnter;    // Najecha� na obiekt
     public event System.Action<GameObject> OnHoverExit;     // Zjecha� z obiektu
     public event System.Action<IClickable, ClickableData> OnClickableClicked;         // Klikn�� obiekt
+    public event System.Action<QueenPheromoneShop> OnQueenShopHovered;               // Najecha� na sklep feromon�w
 
     GameObject currentHoveredObject;
     GameObject previousHoveredObject;
@@ -47,6 +48,7 @@ public class RaycastManager : MonoBehaviour
             {
                 
                 OnHoverEnter?.Invoke(objectUnderCursor);
+                IdentifyObject(objectUnderCursor);
             }
 
             // Zaktualizuj obecny obiekt
@@ -83,5 +85,23 @@ public class RaycastManager : MonoBehaviour
         }
     }
 
-    
+    private void IdentifyObject(GameObject obj)
+    {
+        switch (obj)
+        {
+            case GameObject go when go.TryGetComponent<QueenPheromoneShop>(out var shop):
+                OnQueenShopHovered?.Invoke(shop);
+                Debug.Log("Queen Pheromone Shop hovered");
+                break;
+            case GameObject go when go.TryGetComponent<Workplace>(out var workplace):
+                Debug.Log("Workplace hovered");
+                break;
+            case GameObject go when go.TryGetComponent<Ant>(out var ant):
+                Debug.Log("Ant hovered");
+                break;
+            case GameObject go when go.TryGetComponent<House>(out var house):
+                Debug.Log("House hovered");
+                break;
+        }
+    }
 }
