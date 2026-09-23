@@ -118,6 +118,7 @@ public class BuildingManager : MonoBehaviour
         Debug.Log($"Placed structure at grid position: {gridCoord}");
         OccupyCells(gridCoord, true);
 
+        // ta metoda musi być asynchroniczna żeby nie powodować przycięcia klatki przy dużej ilości obiektów
         if (navMeshManager != null)
             navMeshManager.RebuildNavMesh();
     }
