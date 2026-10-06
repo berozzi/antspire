@@ -1,70 +1,70 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// Odpowiada za produkcję kolonii: rejestruje źródła pasywnego dochodu
-/// (np. miejsca pracy) i co sekundę zamienia ich produkcję na feromony.
+/// <summary>
+/// Rejestruje wszystkie <see cref="ResourceProducer"/> w scenie i udostępnia
+/// zbiorcze zdarzenie produkcji (<see cref="OnProduced"/>), powiązane z eventem
+/// <see cref="ResourceProducer.OnResourceProduced"/> uruchamianym po extraction/production.
+/// Dawniej zarządzał pasywnym dochodem feromonów - teraz feromony to zwykły zasób
+/// (ResourceDef) zdobywany podczas produkcji i traktowany przez PheromoneManager specjalnie.
+/// </summary>
 public class ProductionManager : MonoBehaviour
 {
-    [Header("Dependencies")]
-    [SerializeField] private PheromoneManager pheromoneManager;
+    [Header("Konfiguracja")]
+    [SerializeField] private bool enableLogs = true;
 
-    private readonly List<PassiveIncomeSource> passiveSources = new List<PassiveIncomeSource>();
-    private Coroutine passiveIncomeCoroutine;
+    private readonly List<ResourceProducer> producers = new List<ResourceProducer>();
 
-    public event System.Action<string> OnPheromonesSourceAdded;
+    /// <summary>Zbiorczy event wywoływany po wyprodukowaniu zasobu przez dowolny budynek.</summary>
+    public event Action<ResourceProducer, ItemStack> OnProduced;
+
+    /// <summary>Wszystkie znane budynki produkcyjne (tylko do odczytu).</summary>
+    public IReadOnlyList<ResourceProducer> Producers => producers;
+
+    private void OnEnable()
+    {
+        ResourceProducer.OnResourceProduced += HandleResourceProduced;
+    }
+
+    private void OnDisable()
+    {
+        ResourceProducer.OnResourceProduced -= HandleResourceProduced;
+    }
 
     private void Start()
     {
-        if (pheromoneManager == null)
-            pheromoneManager = FindAnyObjectByType<PheromoneManager>();
-
-        if (pheromoneManager != null)
-            passiveIncomeCoroutine = StartCoroutine(PassiveIncomeRoutine());
+        RefreshFromScene();
     }
 
-    private void OnDestroy()
+    /// <summary>Od nowa znajduje wszystkie budynki produkcyjne w scenie.</summary>
+    public void RefreshFromScene()
     {
-        if (passiveIncomeCoroutine != null)
-            StopCoroutine(passiveIncomeCoroutine);
+        foreach (ResourceProducer producer in FindObjectsByType<ResourceProducer>())
+            RegisterProducer(producer);
     }
 
-    /// Rejestruje źródło pasywnego dochodu.
-    public void RegisterPassiveSource(PassiveIncomeSource source)
+    /// <summary>Dopisuje budynek produkcyjny do rejestru (idempotentne).</summary>
+    public void RegisterProducer(ResourceProducer producer)
     {
-        if (!passiveSources.Contains(source))
-        {
-            passiveSources.Add(source);
-            OnPheromonesSourceAdded?.Invoke(source.SourceName);
-        }
+        if (producer == null || producers.Contains(producer)) return;
+
+        producers.Add(producer);
+        if (enableLogs) Debug.Log($"[ProductionManager] Zarejestrowano producenta: {producer.name}");
     }
 
-    /// Wyrejestrowuje źródło pasywnego dochodu.
-    public void UnregisterPassiveSource(PassiveIncomeSource source)
+    /// <summary>Usuwa budynek produkcyjny z rejestru.</summary>
+    public void UnregisterProducer(ResourceProducer producer)
     {
-        if (passiveSources.Contains(source))
-            passiveSources.Remove(source);
+        if (producer != null)
+            producers.Remove(producer);
     }
 
-    private IEnumerator PassiveIncomeRoutine()
+    private void HandleResourceProduced(ResourceProducer producer, ItemStack stack)
     {
-        while (true)
-        {
-            yield return new WaitForSeconds(1f); // aktualizuj co sekundę
+        if (producer != null && !producers.Contains(producer))
+            producers.Add(producer);
 
-            if (passiveSources.Count == 0)
-                continue;
-
-            float totalPassiveIncome = 0f;
-
-            foreach (var source in passiveSources)
-            {
-                if (source.IsActive)
-                    totalPassiveIncome += source.GetIncomePerSecond();
-            }
-
-            if (totalPassiveIncome > 0 && pheromoneManager != null)
-                pheromoneManager.AddPheromones(totalPassiveIncome, "Pasywny dochód");
-        }
+        OnProduced?.Invoke(producer, stack);
     }
 }

@@ -1,9 +1,19 @@
 using UnityEngine;
 
-/// Odpowiada wyłącznie za walutę gracza - feromony (dodawanie, wydawanie,
-/// sprawdzanie dostępności). Pasywny dochód przejął ProductionManager.
+/// <summary>
+/// Zarządza feromonami - zasobem specjalnym (ResourceDef), który pełni rolę "paliwa"
+/// dla kolonii. Feromony pozyskuje się przy extraction/production (są zwykłym zasobem,
+/// np. trafiają do magazynów), ale nie są walutą ogólną - służą m.in. do odblokowywania
+/// drzewka technologii, budowy szybszych dróg i innych zadań.
+/// Saldo feromonów rośnie dzięki eventowi produkcji z ResourceManagera.
+/// </summary>
 public class PheromoneManager : MonoBehaviour
 {
+    [Header("Zasób feromonów")]
+    [Tooltip("ResourceDef feromonów (np. plik Pheromones.asset) - zasób traktowany specjalnie.")]
+    [SerializeField] private ResourceDef pheromoneResource;
+    [SerializeField] private ResourceManager resourceManager;
+
     [Header("Konfiguracja Feromonów")]
     [SerializeField] private float startingPheromones = 50f;
     [SerializeField] private bool enableLogs = true;
@@ -12,7 +22,7 @@ public class PheromoneManager : MonoBehaviour
     [SerializeField] private float currentPheromones;
     [SerializeField] private float totalEarned;
     [SerializeField] private float totalSpent;
-    float maxPheromones = 1000000f;
+    [SerializeField] private float maxPheromones = 1000000f;
 
     // Eventy
     public System.Action<float> OnPheromonesChanged;
@@ -24,34 +34,76 @@ public class PheromoneManager : MonoBehaviour
     public float TotalEarned => totalEarned;
     public float TotalSpent => totalSpent;
 
-    void Awake()
+    /// <summary>ResourceDef feromonów - zasób służący jako "paliwo".</summary>
+    public ResourceDef PheromoneResource => pheromoneResource;
+
+    private void Awake()
     {
         currentPheromones = startingPheromones;
         Log("PheromoneManager zainicjalizowany. Startowe feromony: " + startingPheromones);
     }
 
-    /// Dodaje feromony do zasobu gracza.
+    private void OnEnable()
+    {
+        if (resourceManager == null)
+            resourceManager = FindAnyObjectByType<ResourceManager>();
+
+        if (resourceManager != null)
+            resourceManager.OnResourceProduced += HandleResourceProduced;
+        else
+            LogWarning("Brak ResourceManager - feromony z produkcji nie będą naliczane.");
+    }
+
+    private void OnDisable()
+    {
+        if (resourceManager != null)
+            resourceManager.OnResourceProduced -= HandleResourceProduced;
+    }
+
+    /// <summary>
+    /// Po wyprodukowaniu zasobu (extraction/production) - jeśli był to ResourceDef
+    /// feromonów, dodaje je do "paliwa" kolonii.
+    /// </summary>
+    private void HandleResourceProduced(ResourceProducer producer, ItemStack stack)
+    {
+        if (stack == null || stack.Resource == null) return;
+        if (pheromoneResource == null || stack.Resource != pheromoneResource) return;
+
+        string source = producer != null ? producer.name : "Produkcja";
+        AddPheromones(stack.Amount, source);
+    }
+
+    /// Dodaje feromony do "paliwa" gracza.
     public void AddPheromones(float amount, string source = "Unknown")
     {
-        if (amount <= 0 || currentPheromones + amount > maxPheromones)
+        if (amount <= 0)
         {
-            LogWarning($"Pr�ba dodania nieprawid�owej ilo�ci feromon�w: {amount} ze �r�d�a: {source}");
+            LogWarning($"Próba dodania nieprawidłowej ilości feromonów: {amount} ze źródła: {source}");
             return;
         }
 
-        currentPheromones += amount;
-        totalEarned += amount;
+        float added = Mathf.Min(amount, maxPheromones - currentPheromones);
+        if (added <= 0)
+        {
+            Log($"Osiągnięto limit feromonów ({maxPheromones}). Źródło: {source}");
+            return;
+        }
+
+        currentPheromones += added;
+        totalEarned += added;
 
         OnPheromonesChanged?.Invoke(currentPheromones);
-        OnPheromonesAdded?.Invoke(amount);
+        OnPheromonesAdded?.Invoke(added);
+
+        Log($"Dodano {added} feromonów ze źródła: {source}. Stan: {currentPheromones}");
     }
 
-    /// Próbuje wydać feromony. Zwraca true, jeśli operacja się powiodła.
+    /// Próbuje wydać feromony (odblokowanie techtree, budowa drogi itp.). Zwraca true, jeśli operacja się powiodła.
     public bool SpendPheromones(float amount, string reason = "Unknown")
     {
         if (amount <= 0)
         {
-            LogWarning($"Pr�ba wydania nieprawid�owej ilo�ci feromon�w: {amount} dla: {reason}");
+            LogWarning($"Próba wydania nieprawidłowej ilości feromonów: {amount} dla: {reason}");
             return false;
         }
 
@@ -63,17 +115,15 @@ public class PheromoneManager : MonoBehaviour
             OnPheromonesChanged?.Invoke(currentPheromones);
             OnPheromonesSpent?.Invoke(amount);
 
-            Log($"Wydano {amount} feromon�w dla: {reason}. Stan: {currentPheromones}");
+            Log($"Wydano {amount} feromonów dla: {reason}. Stan: {currentPheromones}");
             return true;
         }
-        else
-        {
-            Log($"Za ma�o feromon�w! Potrzeba: {amount}, Posiadasz: {currentPheromones} dla: {reason}");
-            return false;
-        }
+
+        Log($"Za mało feromonów! Potrzeba: {amount}, posiadasz: {currentPheromones} dla: {reason}");
+        return false;
     }
 
-    /// Sprawdza, czy gracz ma wystarczająco feromonów.
+    /// Sprawdza, czy gracza stać na dane zadanie (np. odblokowanie techtree).
     public bool CanAfford(float amount)
     {
         return currentPheromones >= amount;

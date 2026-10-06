@@ -36,20 +36,32 @@ public class GameplayCanvasManager : MonoBehaviour
 
     private void OnTechTreeToggled(bool isOpen)
     {
-        techTreePanel.SetActive(isOpen);
+        if (techTreePanel != null)
+            techTreePanel.SetActive(isOpen);
 
-        // Automatycznie zamknij inne panele
-        if (isOpen && warPanel.activeSelf && pheromoneShop.activeSelf)
-            warPanel.SetActive(false);
+        // Automatycznie zamknij pozostałe panele, gdy ten się otwiera
+        if (isOpen)
+        {
+            if (warPanel != null && warPanel.activeSelf)
+                warPanel.SetActive(false);
+            if (pheromoneShop != null && pheromoneShop.activeSelf)
+                pheromoneShop.SetActive(false);
+        }
     }
 
     private void OnWarPanelToggled(bool isOpen)
     {
-        warPanel.SetActive(isOpen);
+        if (warPanel != null)
+            warPanel.SetActive(isOpen);
 
-        // Automatycznie zamknij inne panele
-        if (isOpen && techTreePanel.activeSelf && pheromoneShop.activeSelf)
-            techTreePanel.SetActive(false);
+        // Automatycznie zamknij pozostałe panele, gdy ten się otwiera
+        if (isOpen)
+        {
+            if (techTreePanel != null && techTreePanel.activeSelf)
+                techTreePanel.SetActive(false);
+            if (pheromoneShop != null && pheromoneShop.activeSelf)
+                pheromoneShop.SetActive(false);
+        }
     }
     private void OnStructureMenuToggled(bool isOpen)
     {

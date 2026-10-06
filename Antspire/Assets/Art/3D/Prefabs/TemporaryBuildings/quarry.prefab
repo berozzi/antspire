@@ -142,4 +142,4 @@ MonoBehaviour:
   extraction: {fileID: 11400000, guid: b8656d317c354e94fb7593bd786d5bab, type: 2}
   production: {fileID: 0}
   intervalSeconds: 10
-  storage: {fileID: 0}
+  storage: {fileID: 8388249736293612484}

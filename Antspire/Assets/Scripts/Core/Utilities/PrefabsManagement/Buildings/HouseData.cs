@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[System.Serializable]
 public class HouseData
 {
     public string Name { get; set; } = string.Empty;

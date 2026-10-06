@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 /// Centralizuje czytanie wejścia (klawiatura/mysz). Reszta systemów subskrybuje
@@ -37,7 +38,7 @@ public class InputManager : MonoBehaviour
         if (kb.escapeKey.wasPressedThisFrame)
             OnEscapePressed?.Invoke();
 
-        if (mouse != null && mouse.leftButton.wasPressedThisFrame)
+        if (mouse != null && mouse.leftButton.wasPressedThisFrame && !IsPointerOverUI())
             OnPrimaryClickPressed?.Invoke();
 
         MoveVector = new Vector2(
@@ -51,5 +52,15 @@ public class InputManager : MonoBehaviour
     public Vector2 GetMousePosition()
     {
         return Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
+    }
+
+    /// <summary>
+    /// Klik w element UI nie może przechodzić do świata - inaczej kliknięcie
+    /// przyciska w menu jednocześnie stawiałoby/skasowywałoby budynek pod kursorem.
+    /// </summary>
+    private static bool IsPointerOverUI()
+    {
+        EventSystem eventSystem = EventSystem.current;
+        return eventSystem != null && eventSystem.IsPointerOverGameObject();
     }
 }

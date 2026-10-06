@@ -16,6 +16,11 @@ public class UndergroundTerrain : MonoBehaviour
     public Material dirtMaterial;
     public Material sandMaterial;
     public Material stoneMaterial;
+
+    // Zamiast renderer.material (getter tworzy instancję materiału na każdy
+    // kafel - wyciek pamięci i zerwany batching) używamy MaterialPropertyBlocku.
+    private static readonly int ColorPropertyId = Shader.PropertyToID("_Color");
+    private MaterialPropertyBlock colorBlock;
     
     public void GenerateTerrainByPerlin(int x, int y, Vector3 planePosition)
     {
@@ -60,11 +65,11 @@ public class UndergroundTerrain : MonoBehaviour
         tile.transform.parent = this.transform;
         tile.name = $"Tile_{x}_{y}_{terrainType}";
 
-        // Przypisz materiał
+        // Przypisz materiał (sharedMaterial - bez tworzenia instancji)
         Renderer renderer = tile.GetComponent<Renderer>();
         if (renderer != null && tileMaterial != null)
         {
-            renderer.material = tileMaterial;
+            renderer.sharedMaterial = tileMaterial;
         }
 
         // Dodaj komponent Tile z informacjami
@@ -72,12 +77,23 @@ public class UndergroundTerrain : MonoBehaviour
         tileInfo.type = terrainType;
         tileInfo.isDiggable = (terrainType != "Stone");
 
-        // Dopasuj kolor do typu (jeśli brak materiałów)
-        if (tileMaterial == null)
+        // Dopasuj kolor do typu (jeśli brak materiałów) - przez PropertyBlock,
+        // żeby nie instantiować materiału i nie mieć NRE gdy renderer jest null.
+        if (tileMaterial == null && renderer != null)
         {
-            if (terrainType == "Stone") renderer.material.color = Color.gray;
-            else if (terrainType == "Sand") renderer.material.color = Color.yellow;
-            else renderer.material.color = new Color(0.4f, 0.2f, 0f); // brąz
+            if (colorBlock == null)
+                colorBlock = new MaterialPropertyBlock();
+
+            renderer.GetPropertyBlock(colorBlock);
+
+            if (terrainType == "Stone")
+                colorBlock.SetColor(ColorPropertyId, Color.gray);
+            else if (terrainType == "Sand")
+                colorBlock.SetColor(ColorPropertyId, Color.yellow);
+            else
+                colorBlock.SetColor(ColorPropertyId, new Color(0.4f, 0.2f, 0f)); // brąz
+
+            renderer.SetPropertyBlock(colorBlock);
         }
     }
 }

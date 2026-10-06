@@ -26,7 +26,6 @@ public class GameSave
         houseData = new List<HouseData>();
         workplaceData = new List<WorkplaceData>();
         roads = new List<RoadData>();
-        resources = new List<ResourceData>();
     }
 
     public PlayerData player;
@@ -35,7 +34,6 @@ public class GameSave
     public List<HouseData> houseData;
     public List<WorkplaceData> workplaceData;
     public List<RoadData> roads;
-    public List<ResourceData> resources;
 
     public GameSave() { }
 }

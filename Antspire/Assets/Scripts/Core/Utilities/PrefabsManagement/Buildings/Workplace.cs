@@ -2,39 +2,33 @@ using UnityEngine;
 
 public class Workplace : MonoBehaviour, ISaveable, IClickable
 {
-    [Header("Doch�d Pasywny")]
+    [Header("Wydajność Pracy")]
     [SerializeField] private string workplaceName = "Miejsce Pracy";
     [SerializeField] private string description = "Opis miejsca pracy.";
     [SerializeField] private float baseIncomePerSecond = 1f;
-    [SerializeField] private bool generatesIncome = true; // set to false if this workplace does not generate pheromone income
+    [SerializeField] private bool generatesIncome = true; // false, jeśli miejsce pracy nie generuje dochodu
     [SerializeField] private bool isActive = true;
     [SerializeField] private WorkplaceType workplaceType;
     [SerializeField] private int capacity = 1;
     [SerializeField] private int currentEmployees = 0;
     [SerializeField] private int level = 1;
 
-    [Header("Referencje")]
-    [SerializeField] private ProductionManager productionManager;
-
-    private PassiveIncomeSource incomeSource;
-    private bool isRegistered = false;
-
-
     // Properties dla AI
     public string WorkplaceName => workplaceName;
     public string Description => description;
-    public bool IsActive { 
-        get { return isActive; } 
+    public bool IsActive
+    {
+        get { return isActive; }
         set { isActive = value; }
     }
-    public float CurrentIncome => incomeSource?.GetIncomePerSecond() ?? 0f;
+    public float CurrentIncome => generatesIncome && isActive ? baseIncomePerSecond : 0f;
     public int Capacity => capacity;
     public int CurrentEmployees
     {
-        get { return currentEmployees; } 
+        get { return currentEmployees; }
         set { currentEmployees = value; }
     }
-    public int Level 
+    public int Level
     {
         get { return level; }
         set { level = value; }
@@ -43,52 +37,21 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
     void Start()
     {
         SaveManager.Register(this);
-        InitializeIncomeSource();
     }
 
-    void InitializeIncomeSource()
-    {
-        if (!generatesIncome) return;
-
-        if (productionManager == null)
-            productionManager = FindAnyObjectByType<ProductionManager>();
-
-        // Utw�rz �r�d�o dochodu
-        incomeSource = new PassiveIncomeSource(workplaceName, baseIncomePerSecond);
-
-        // Zarejestruj si� w managerze
-        if (productionManager != null)
-        {
-            productionManager.RegisterPassiveSource(incomeSource);
-            isRegistered = true;
-        }
-        else
-        {
-            Debug.LogWarning($"ProductionManager nie przypisany do Workplace: {workplaceName}");
-        }
-    }
-
-    /// Ulepsza doch�d z tego miejsca pracy
+    /// Ulepsza wydajność tego miejsca pracy
     public void UpgradeIncome(float upgradeAmount)
     {
-        if (incomeSource != null)
-        {
-            incomeSource.UpgradeBaseIncome(upgradeAmount);
-            Debug.Log($"Ulepszono {workplaceName}. Nowy doch�d: {incomeSource.GetIncomePerSecond()}/s");
-        }
+        baseIncomePerSecond += upgradeAmount;
+        Debug.Log($"Ulepszono {workplaceName}. Nowa wydajność: {baseIncomePerSecond}/s");
     }
-   
-    /// Ustawia now� bazow� warto�� dochodu
+
+    /// Ustawia nową bazową wartość wydajności
     public void SetBaseIncome(float newIncome)
     {
-        if (incomeSource != null)
-        {
-            // Mo�emy doda� logik� obliczania r�nicy i aktualizacji
-            baseIncomePerSecond = newIncome;
-            // Tutaj potrzebowaliby�my metody do aktualizacji w PassiveIncomeSource
-        }
+        baseIncomePerSecond = newIncome;
     }
-    
+
     int AvailableSpots()
     {
         return Capacity - CurrentEmployees;
@@ -97,8 +60,9 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
     public bool HasAvailableCapacity()
     {
         AvailableSpots();
-        return CurrentEmployees < Capacity; 
+        return CurrentEmployees < Capacity;
     }
+
     public object GetSaveData()
     {
         return new WorkplaceData
@@ -126,26 +90,17 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
             this.Level = workplaceData.level;
         }
     }
+
     /// Aktywuje/dezaktywuje generowanie dochodu
     public void SetIncomeActive(bool active)
     {
-        if (incomeSource != null)
-        {
-            incomeSource.SetActive(active);
-            Debug.Log($"{workplaceName} - generowanie dochodu: {(active ? "AKTYWNE" : "WY��CZONE")}");
-        }
+        isActive = active;
+        Debug.Log($"{workplaceName} - generowanie dochodu: {(active ? "AKTYWNE" : "WYŁĄCZONE")}");
     }
+
     void OnDestroy()
     {
         SaveManager.Unregister(this);
-        if (productionManager == null)
-            productionManager = FindAnyObjectByType<ProductionManager>();
-
-        // Wyrejestruj �r�d�o przy zniszczeniu
-        if (isRegistered && productionManager != null && incomeSource != null)
-        {
-            productionManager.UnregisterPassiveSource(incomeSource);
-        }
     }
 
     /// IClickable implementation
@@ -153,14 +108,15 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
     {
         Debug.Log($"Clicked on workplace: {workplaceName}");
     }
-    /// Zwraca dane do wy�wietlenia w UI po klikni�ciu
+
+    /// Zwraca dane do wyświetlenia w UI po kliknięciu
     public ClickableData GetClickableData()
     {
         var stats = new System.Collections.Generic.Dictionary<string, string>
         {
-            { "Doch�d", $"{CurrentIncome}/s" },
+            { "Dochód", $"{CurrentIncome}/s" },
             { "Status", IsActive ? "Aktywne" : "Nieaktywne" },
-            { "Pojemno��", $"{CurrentEmployees}/{Capacity}" }
+            { "Pojemność", $"{CurrentEmployees}/{Capacity}" }
         };
         return new ClickableData
         {
@@ -168,7 +124,7 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
             Type = workplaceType.ToString(),
             Description = description,
             Level = this.Level,
-            Icon = null, // Mo�na przypisa� ikon� miejsca pracy tutaj
+            Icon = null, // Można przypisać ikonę miejsca pracy tutaj
             Stats = stats
         };
     }

@@ -26,6 +26,14 @@ public class GameManager : MonoBehaviour
 
     public static GameStates CurrentGameState { get; private set; } = GameStates.InGame;
 
+    // Przy wejściu w play mode z wyłączonym domain reloadem statyczny stan gry
+    // przeżyłby między sesjami (np. zostawałby BuildMode) - resetujemy go zawsze.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticState()
+    {
+        CurrentGameState = GameStates.InGame;
+    }
+
     // Eventy dla UI
     public event System.Action<bool> OnTechTreeToggled;
     public event System.Action<bool> OnWarPanelToggled;
@@ -157,7 +165,8 @@ public class GameManager : MonoBehaviour
         switch (CurrentGameState)
         {
             case GameStates.InGame:
-                hudManager.ToggleMenu();
+                if (hudManager != null)
+                    hudManager.ToggleMenu();
                 break;
             case GameStates.BuildMode:
                 SetGameState(GameStates.InStructureMenu);
@@ -185,7 +194,7 @@ public class GameManager : MonoBehaviour
 
     private void UpdateComponentsStates()
     {
-        bool shouldBeActive = !hudManager.isPaused;
+        bool shouldBeActive = hudManager == null || !hudManager.isPaused;
 
         if (buildingManager != null)
         {
@@ -221,7 +230,7 @@ public class GameManager : MonoBehaviour
         {
             SetGameState(GameStates.QueenShop);
         }
-        else
+        else if (hudManager != null)
         {
             hudManager.ShowObjectInfo(data);
         }

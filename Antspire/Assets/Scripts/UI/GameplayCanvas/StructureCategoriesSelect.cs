@@ -10,16 +10,22 @@ public class StructureCategoriesSelect : MonoBehaviour
     {
         button = GetComponent<Button>();
 
-        if (gameplayCanvasManager == null)
-        {
-            gameplayCanvasManager = FindAnyObjectByType<GameplayCanvasManager>();
-            Debug.LogError("GameplayCanvasManager not found in the scene.", this);
-        }
         if (button == null)
         {
             Debug.LogError("This script requires a Button component on the same GameObject.", this);
+            return;
         }
-        // Przypisz odpowiednie metody w zale¿noœci od nazwy przycisku
+
+        if (gameplayCanvasManager == null)
+            gameplayCanvasManager = FindAnyObjectByType<GameplayCanvasManager>();
+
+        if (gameplayCanvasManager == null)
+        {
+            Debug.LogError("GameplayCanvasManager not found in the scene.", this);
+            return;
+        }
+
+        // Przypisz odpowiednie metody w zaleï¿½noï¿½ci od nazwy przycisku
         switch (gameObject.name)
         {
             case string name when name.Contains("Common"):

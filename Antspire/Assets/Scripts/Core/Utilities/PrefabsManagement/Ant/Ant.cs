@@ -11,9 +11,11 @@ public class Ant : MonoBehaviour, ISaveable, IClickable
     public int carriedResources;
     Vector3 lastPosition;
 
-    SaveManager saveManager;
-    // mo¿emy to bezproblemowo zwiêkszyæ
-    // aby zrobiæ load to trzeba dodaæ settery do pozosta³ych zmiennych
+    // Cache zamiast FindAnyObjectByType w kaÅ¼dej klatce ruchu - przy wielu
+    // mrÃ³wkach przeszukiwanie sceny na klatkÄ™ byÅ‚o bardzo kosztowne.
+    GridManager grid;
+    // moï¿½emy to bezproblemowo zwiï¿½kszyï¿½
+    // aby zrobiï¿½ load to trzeba dodaï¿½ settery do pozostaï¿½ych zmiennych
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -21,11 +23,6 @@ public class Ant : MonoBehaviour, ISaveable, IClickable
         SaveManager.Register(this);
         antName = gameObject.name;
 
-        saveManager = FindAnyObjectByType<SaveManager>();
-        if (saveManager == null )
-        {             
-            Debug.LogError("SaveManager not found in the scene!");
-        }
         SetPosition();
     }
 
@@ -38,6 +35,18 @@ public class Ant : MonoBehaviour, ISaveable, IClickable
         }
     }
 
+    void OnDestroy()
+    {
+        // Zwalnia etat - inaczej miejsce pracy zostaje "peï¿½ne" na zawsze.
+        if (assignedWorkplace != null)
+        {
+            assignedWorkplace.CurrentEmployees = Mathf.Max(0, assignedWorkplace.CurrentEmployees - 1);
+            assignedWorkplace = null;
+        }
+
+        SaveManager.Unregister(this);
+    }
+
     public void AssignHouse(House house)
     {
         assignedHouse = house;
@@ -45,6 +54,9 @@ public class Ant : MonoBehaviour, ISaveable, IClickable
     }
     public void AssignWorkplace(Workplace workplace)
     {
+        if (workplace == null)
+            return;
+
         assignedWorkplace = workplace;
         workplace.CurrentEmployees += 1;
         Debug.Log($"Ant {name} assigned to workplace {workplace.WorkplaceName}");
@@ -57,13 +69,18 @@ public class Ant : MonoBehaviour, ISaveable, IClickable
     
     public void SetPosition()
     {
-        gridPosition = saveManager.GetCurrentPosition(transform.position);  
+        if (grid == null)
+            grid = FindAnyObjectByType<GridManager>();
+
+        if (grid != null)
+            gridPosition = grid.WorldToGrid(transform.position);
+
         lastPosition = transform.position;
     }
     // ISaveable
     public object GetSaveData()
     {
-        // Tworzysz strukturê danych, któr¹ zapiszesz w GameSave
+        // Tworzysz strukturï¿½ danych, ktï¿½rï¿½ zapiszesz w GameSave
         return new AntData
         {
             name = antName,

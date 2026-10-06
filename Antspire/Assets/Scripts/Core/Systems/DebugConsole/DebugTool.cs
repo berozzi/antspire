@@ -63,14 +63,36 @@ public class AdvancedDebugConsole : MonoBehaviour
 
     public delegate void CommandHandler(string[] args);
 
+    /// <summary>
+    /// Konsola (komendy summon/set_key/destroy/timescale...) dostępna tylko
+    /// w edytorze i buildach deweloperskich - w release trafiłaby prosto do gracza.
+    /// </summary>
+    private static bool ConsoleAvailable
+    {
+        get
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            return true;
+#else
+            return false;
+#endif
+        }
+    }
+
     void Start()
     {
+        if (!ConsoleAvailable)
+            return;
+
         RegisterCommands();
         LogSystem($"Debug Console Ready - Press {toggleKey} to open, {closeKey} to close");
     }
 
     void Update()
     {
+        if (!ConsoleAvailable)
+            return;
+
         var kb = Keyboard.current;
         if (kb == null) return;
 
@@ -101,7 +123,8 @@ public class AdvancedDebugConsole : MonoBehaviour
 
     void OnGUI()
     {
-        if (!showConsole) return;
+        if (!ConsoleAvailable || !showConsole)
+            return;
 
         DrawConsole();
     }

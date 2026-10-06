@@ -84,7 +84,6 @@ public class SaveManager : MonoBehaviour
         }
 
         GameSave.Instance.player = loadedGameSave.player;
-        GameSave.Instance.resources = loadedGameSave.resources;
         Debug.Log("Game Loaded with New Input System!");
     }
 }

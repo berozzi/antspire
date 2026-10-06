@@ -25,7 +25,8 @@ public class RaycastManager : MonoBehaviour
         if (playerCamera == null)
             playerCamera = Camera.main;
 
-        
+        if (playerCamera == null)
+            Debug.LogError("RaycastManager: brak kamery (Camera.main) - raycast nie będzie działać.", this);
     }
     public void HandleMainRaycast()
     {
@@ -58,6 +59,9 @@ public class RaycastManager : MonoBehaviour
 
     private (bool, GameObject) GetRaycastHitObject()
     {
+        if (playerCamera == null)
+            return (false, null);
+
         Vector2 mousePos = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
         Ray ray = playerCamera.ScreenPointToRay(mousePos);
         RaycastHit hit;

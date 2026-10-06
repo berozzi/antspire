@@ -6,16 +6,26 @@ public class UpgradeButton : MonoBehaviour
     Button button;
     [SerializeField] GameObject targetObject;
     public event System.Action<GameObject> OnUpgradeClicked;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+
+    // Subskrypcja raz przy starcie - dodawanie listenera w Update() narastało
+    // w nieskończoność (wyciek pamięci + tysiące wywołań jednego kliknięcia).
     void Start()
     {
         button = GetComponent<Button>();
+
+        if (button == null)
+        {
+            Debug.LogError("UpgradeButton: brak komponentu Button na tym obiekcie.", this);
+            return;
+        }
+
+        button.onClick.AddListener(OnUpgradeButtonClicked);
     }
 
-    // Update is called once per frame
-    void Update()
+    void OnDestroy()
     {
-        button.onClick.AddListener(OnUpgradeButtonClicked);
+        if (button != null)
+            button.onClick.RemoveListener(OnUpgradeButtonClicked);
     }
 
     void OnUpgradeButtonClicked()

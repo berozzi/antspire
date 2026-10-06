@@ -14,9 +14,9 @@ public class LoadingSceneManager : MonoBehaviour
     [Header("Settings")]
     [SerializeField]
     private string[] loadingTips = {
-        "Zbieraj surowce w ci¹gu dnia!",
-        "Noc¹ potwory s¹ silniejsze!",
-        "Rozmawiaj z NPC, aby zdobyæ nagrody!"
+        "Zbieraj surowce w ciï¿½gu dnia!",
+        "Nocï¿½ potwory sï¿½ silniejsze!",
+        "Rozmawiaj z NPC, aby zdobyï¿½ nagrody!"
     };
 
     private string targetScene;
@@ -24,13 +24,13 @@ public class LoadingSceneManager : MonoBehaviour
 
     private void Start()
     {
-        // Pobierz nazwê sceny do za³adowania z PlayerPrefs
+        // Pobierz nazwï¿½ sceny do zaï¿½adowania z PlayerPrefs
         targetScene = PlayerPrefs.GetString("SceneToLoad", "SampleScene");
 
-        // Wybierz losow¹ poradê
+        // Wybierz losowï¿½ poradï¿½
         ShowRandomTip();
 
-        // Rozpocznij ³adowanie
+        // Rozpocznij ï¿½adowanie
         StartCoroutine(LoadSceneAsync());
     }
 
@@ -46,14 +46,20 @@ public class LoadingSceneManager : MonoBehaviour
     private IEnumerator LoadSceneAsync()
     {
         
-        // ETAP 1: Rozpocznij asynchroniczne ³adowanie sceny
+        // ETAP 1: Rozpocznij asynchroniczne ï¿½adowanie sceny
         AsyncOperation operation = SceneManager.LoadSceneAsync(targetScene);
-        operation.allowSceneActivation = false; // Nie prze³¹czaj od razu
+        if (operation == null)
+        {
+            Debug.LogError($"LoadingSceneManager: nie moï¿½na zaï¿½adowaï¿½ sceny '{targetScene}'. " +
+                           "Sprawdï¿½, czy jest dodana w Build Settings.");
+            yield break;
+        }
+        operation.allowSceneActivation = false; // Nie przeï¿½ï¿½czaj od razu
 
         // Status
-        Debug.Log("£adowanie zasobów sceny...");
+        Debug.Log("ï¿½adowanie zasobï¿½w sceny...");
 
-        // ETAP 2: Czekaj a¿ podstawowe assets siê za³aduj¹
+        // ETAP 2: Czekaj aï¿½ podstawowe assets siï¿½ zaï¿½adujï¿½
         while (operation.progress < 0.9f)
         {
             float assetProgress = operation.progress / 0.9f;
@@ -61,22 +67,26 @@ public class LoadingSceneManager : MonoBehaviour
             yield return null;
         }
 
-        // ETAP 3: Assets za³adowane, ale scena jeszcze nie aktywna
-        Debug.Log("Inicjalizacja systemów gry...");
-        yield return new WaitForSeconds(0.5f); // Ma³e opóŸnienie dla efektu
+        // ETAP 3: Assets zaï¿½adowane, ale scena jeszcze nie aktywna
+        Debug.Log("Inicjalizacja systemï¿½w gry...");
+        // WaitForSecondsRealtime, bo WaitForSeconds stoi gdy Time.timeScale == 0
+        // (gra zapauzowana) - ï¿½adowanie zawiesiï¿½oby siï¿½ wtedy na zawsze.
+        yield return new WaitForSecondsRealtime(0.5f); // Maï¿½e opï¿½nienie dla efektu
 
-        // ETAP 4: Aktywuj scenê - TERAZ ³aduj¹ siê i wykonuj¹ skrypty
+        // ETAP 4: Aktywuj scenï¿½ - TERAZ ï¿½adujï¿½ siï¿½ i wykonujï¿½ skrypty
         operation.allowSceneActivation = true;
 
-        // ETAP 5: Czekaj a¿ scena bêdzie fully loaded (w³¹cznie ze skryptami)
+        // ETAP 5: Czekaj aï¿½ scena bï¿½dzie fully loaded (wï¿½ï¿½cznie ze skryptami)
         yield return new WaitUntil(() => operation.isDone);
 
-        // ETAP 6: Dodatkowe czekanie na inicjalizacjê skryptów
+        // ETAP 6: Dodatkowe czekanie na inicjalizacjï¿½ skryptï¿½w
         Debug.Log("Finalizowanie...");
-        yield return new WaitForSeconds(1f);
+        yield return new WaitForSecondsRealtime(1f);
 
-        // Teraz wszystkie skrypty (w tym GameState) s¹ za³adowane i gotowe
-        Debug.Log("SCENA W PE£NI ZA£ADOWANA - WSZYSTKIE SKRYPTY GOTOWE");
+        isLoadingComplete = true;
+
+        // Teraz wszystkie skrypty (w tym GameState) sï¿½ zaï¿½adowane i gotowe
+        Debug.Log("SCENA W PEï¿½NI ZAï¿½ADOWANA - WSZYSTKIE SKRYPTY GOTOWE");
     }
     private void UpdateProgressUI(float progress, string stage = "")
     {
@@ -84,16 +94,15 @@ public class LoadingSceneManager : MonoBehaviour
 
         string stageText = string.IsNullOrEmpty(stage) ? "" : $" ({stage})";
         progressText.text = $"{progress * 100:0}%{stageText}";
-
-        Debug.Log($"Progress: {progress * 100:0}% - {stage}");
+        // Bez Debug.Log - ta metoda jest woï¿½ana co klatkï¿½ podczas ï¿½adowania.
     }
 
     private void Update()
     {
-        // Opcjonalnie: mo¿esz dodaæ animacje podczas ³adowania
+        // Opcjonalnie: moï¿½esz dodaï¿½ animacje podczas ï¿½adowania
         if (!isLoadingComplete)
         {
-            // Animacja ³adowania (np. obracaj¹ca siê ikona)
+            // Animacja ï¿½adowania (np. obracajï¿½ca siï¿½ ikona)
         }
     }
 }

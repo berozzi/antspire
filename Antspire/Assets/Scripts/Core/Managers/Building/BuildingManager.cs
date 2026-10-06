@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -14,6 +15,23 @@ public class BuildingManager : MonoBehaviour
     [Header("Highlight Settings")]
     [SerializeField] private Material highlightMaterial;
     [SerializeField] private Material invalidMaterial;
+
+    /// <summary>
+    /// Typy komponentów oznaczających "to jest struktura":
+    /// można ją usunąć w trybie niszczenia i zajmuje ona komórki siatki.
+    /// Mrówki i inne obiekty tych komponentów nie mają, więc tryb niszczenia
+    /// ich nie kasuje.
+    /// </summary>
+    private static readonly System.Type[] StructureComponentTypes =
+    {
+        typeof(BuildingFootprint),
+        typeof(Building),
+        typeof(StructureSize),
+        typeof(Tunnel),
+        typeof(House),
+        typeof(Workplace),
+        typeof(ResourceProducer)
+    };
 
     private GameObject structurePrefab;
     private bool buildModeEnabled;
@@ -44,12 +62,27 @@ public class BuildingManager : MonoBehaviour
 
         groundLayerMask = LayerMask.GetMask("Ground");
 
+        // Siatka buduje się w swoim Start(); dzięki eventowi nie zależy to
+        // od kolejności Start() między obiektami w scenie.
+        if (grid != null)
+            grid.GridReady += OccupyExistingStructures;
+
         if (inputManager != null)
             inputManager.OnPrimaryClickPressed += HandlePrimaryClick;
     }
 
+    private void Start()
+    {
+        // Sytuacja, w której GridManager został utworzony później niż nasz Awake.
+        if (grid != null && grid.IsInitialized)
+            OccupyExistingStructures();
+    }
+
     private void OnDestroy()
     {
+        if (grid != null)
+            grid.GridReady -= OccupyExistingStructures;
+
         if (inputManager != null)
             inputManager.OnPrimaryClickPressed -= HandlePrimaryClick;
 
@@ -105,18 +138,28 @@ public class BuildingManager : MonoBehaviour
             return;
         }
 
-        Vector3 gridPos = SnapBuildingToGrid(mousePos);
-        Vector2Int gridCoord = grid != null ? grid.WorldToGrid(gridPos) : Vector2Int.zero;
+        Vector3 baseCellCenter = SnapBuildingToGrid(mousePos);
+        Vector2Int gridCoord = grid != null ? grid.WorldToGrid(baseCellCenter) : Vector2Int.zero;
 
         if (!CanPlaceBuilding(gridCoord))
         {
-            Debug.Log("Cannot place structure here, area is occupied. " + gridPos);
+            Debug.Log("Cannot place structure here, area is occupied. " + baseCellCenter);
             return;
         }
 
-        Instantiate(structurePrefab, gridPos, Quaternion.identity);
-        Debug.Log($"Placed structure at grid position: {gridCoord}");
-        OccupyCells(gridCoord, true);
+        // Prefab staje w ŚRODKU całego footprintu, a nie na bazowej komórce -
+        // dzięki temu model wizualnie pokrywa dokładnie zajęte komórki.
+        Vector3 spawnPos = FootprintCenter(gridCoord, prefabWidth, prefabHeight);
+        GameObject placed = Instantiate(structurePrefab, spawnPos, Quaternion.identity);
+
+        // Zapisz faktyczny rozmiar, żeby przy usuwaniu zwolnić właściwe komórki.
+        BuildingFootprint footprint = placed.GetComponent<BuildingFootprint>();
+        if (footprint == null)
+            footprint = placed.AddComponent<BuildingFootprint>();
+        footprint.Initialize(gridCoord, prefabWidth, prefabHeight);
+
+        Debug.Log($"Placed structure at grid position: {gridCoord} ({prefabWidth}x{prefabHeight})");
+        OccupyCells(gridCoord, prefabWidth, prefabHeight, true);
 
         // ta metoda musi być asynchroniczna żeby nie powodować przycięcia klatki przy dużej ilości obiektów
         if (navMeshManager != null)
@@ -146,15 +189,15 @@ public class BuildingManager : MonoBehaviour
         return true;
     }
 
-    /// Zmienia stan zajętości komórek pod budynkiem.
-    public void OccupyCells(Vector2Int baseCoord, bool state)
+    /// Zmienia stan zajętości komórek pod budynkiem o zadanym rozmiarze.
+    public void OccupyCells(Vector2Int baseCoord, int width, int height, bool state)
     {
         if (grid == null)
             return;
 
-        for (int x = 0; x < prefabWidth; x++)
+        for (int x = 0; x < width; x++)
         {
-            for (int z = 0; z < prefabHeight; z++)
+            for (int z = 0; z < height; z++)
             {
                 Vector2Int coord = baseCoord + new Vector2Int(x, z);
                 Cell cell = grid.GetCell(coord);
@@ -163,6 +206,29 @@ public class BuildingManager : MonoBehaviour
                     cell.isOccupied = state;
             }
         }
+    }
+
+    /// <summary>Środek footprintu (środek komórki bazowej i skrajnej, średnia).</summary>
+    private Vector3 FootprintCenter(Vector2Int baseCoord, int width, int height)
+    {
+        if (grid == null)
+            return Vector3.zero;
+
+        Vector3 from = grid.GridToWorld(baseCoord);
+        Vector3 to = grid.GridToWorld(baseCoord + new Vector2Int(width - 1, height - 1));
+        return (from + to) * 0.5f;
+    }
+
+    /// <summary>Rozmiar jednej komórki w świecie (osiowe, bez Y).</summary>
+    private Vector3 CellWorldSize(Vector2Int coord)
+    {
+        if (grid == null)
+            return Vector3.one;
+
+        Vector3 origin = grid.GridToWorld(coord);
+        Vector3 alongX = grid.GridToWorld(coord + Vector2Int.right) - origin;
+        Vector3 alongZ = grid.GridToWorld(coord + Vector2Int.up) - origin;
+        return new Vector3(Mathf.Abs(alongX.x), 0f, Mathf.Abs(alongZ.z));
     }
 
     /// Pobiera pozycję świata pod kursorem (raycast na warstwę Ground).
@@ -221,23 +287,110 @@ public class BuildingManager : MonoBehaviour
             return;
         }
 
-        GameObject hitObject = hit.collider.gameObject;
-
-        if (hitObject.layer == LayerMask.NameToLayer("Ground"))
+        // Trafiony kolider może być na dziecku - szukamy struktury od rodzica w górę.
+        Component structureComponent = FindStructureComponent(hit.collider);
+        if (structureComponent == null)
         {
-            Debug.Log("Kliknięto Ground – brak obiektu do usunięcia.");
+            Debug.Log($"'{hit.collider.name}' nie jest strukturą – nie usuwam.");
             return;
         }
 
-        Vector3 buildingWorldPos = hitObject.transform.position;
-        Vector2Int gridCoord = grid != null ? grid.WorldToGrid(buildingWorldPos) : Vector2Int.zero;
+        GameObject structure = structureComponent.gameObject;
 
-        OccupyCells(gridCoord, false);
-        Destroy(hitObject);
-        Debug.Log($"Usunięto obiekt z koliderem na pozycji siatki: {gridCoord}");
+        // Rozmiar footprintu bierzemy z obiektu, który faktycznie usuwamy,
+        // a nie z aktualnie wybranego w menu prefabu.
+        BuildingFootprint footprint = structure.GetComponent<BuildingFootprint>();
+        StructureSize structureSize = structure.GetComponent<StructureSize>();
+
+        Vector2Int gridCoord;
+        int width = 1;
+        int height = 1;
+
+        if (footprint != null)
+        {
+            gridCoord = footprint.Origin;
+            width = footprint.Width;
+            height = footprint.Height;
+        }
+        else
+        {
+            gridCoord = grid != null ? grid.WorldToGrid(structure.transform.position) : Vector2Int.zero;
+            if (structureSize != null)
+            {
+                width = structureSize.width;
+                height = structureSize.height;
+            }
+        }
+
+        OccupyCells(gridCoord, width, height, false);
+        Destroy(structure);
+        Debug.Log($"Usunięto '{structure.name}' z komórek: {gridCoord} ({width}x{height})");
 
         if (navMeshManager != null)
             navMeshManager.RebuildNavMesh();
+    }
+
+    /// <summary>Zwraca komponent oznaczający obiekt jako strukturę (albo null).</summary>
+    private static Component FindStructureComponent(Collider collider)
+    {
+        foreach (System.Type type in StructureComponentTypes)
+        {
+            Component component = collider.GetComponentInParent(type);
+            if (component != null)
+                return component;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Zajmuje komórki pod budynkami, które już stoją w scenie (postawione ręcznie
+    /// lub wczytane) - gracz nie może w nie budować. Idempotentne: po ponownej
+    /// budowie siatki po prostu ustawia komórki jeszcze raz.
+    /// </summary>
+    private void OccupyExistingStructures()
+    {
+        if (grid == null)
+            return;
+
+        HashSet<GameObject> processed = new HashSet<GameObject>();
+
+        foreach (System.Type type in StructureComponentTypes)
+        {
+            foreach (Component component in FindObjectsByType(type))
+            {
+                if (!processed.Add(component.gameObject))
+                    continue;
+
+                BuildingFootprint footprint = component as BuildingFootprint;
+                if (footprint == null)
+                    footprint = component.GetComponent<BuildingFootprint>();
+
+                Vector2Int origin;
+                int width = 1;
+                int height = 1;
+
+                if (footprint != null)
+                {
+                    origin = footprint.Origin;
+                    width = footprint.Width;
+                    height = footprint.Height;
+                }
+                else
+                {
+                    origin = grid.WorldToGrid(component.transform.position);
+
+                    StructureSize size = component.GetComponent<StructureSize>();
+                    if (size != null)
+                    {
+                        width = size.width;
+                        height = size.height;
+                    }
+                }
+
+                OccupyCells(origin, width, height, true);
+            }
+        }
     }
 
     // ---------- Highlight pod budową ----------
@@ -253,7 +406,7 @@ public class BuildingManager : MonoBehaviour
 
         if (gridCoordHighlight != lastGridPos || currentHighlight == null)
         {
-            CreateOrUpdateHighlight(gridPosHighlight);
+            CreateOrUpdateHighlight(gridCoordHighlight);
             lastGridPos = gridCoordHighlight;
         }
 
@@ -261,13 +414,20 @@ public class BuildingManager : MonoBehaviour
         UpdateHighlightColor(isValid);
     }
 
-    private void CreateOrUpdateHighlight(Vector3 worldPos)
+    private void CreateOrUpdateHighlight(Vector2Int gridCoord)
     {
         if (currentHighlight == null)
             CreateHighlightObject();
 
-        currentHighlight.transform.position = worldPos;
-        currentHighlight.transform.localScale = new Vector3(prefabWidth, 0.1f, prefabHeight * 0.9f);
+        // Highlight centrujemy na środku footprintu i skalujemy do jego realnego
+        // rozmiaru w świecie - pokrywa dokładnie te same komórki, które zajmujemy.
+        currentHighlight.transform.position = FootprintCenter(gridCoord, prefabWidth, prefabHeight);
+
+        Vector3 cellSize = CellWorldSize(gridCoord);
+        currentHighlight.transform.localScale = new Vector3(
+            prefabWidth * cellSize.x,
+            0.1f,
+            prefabHeight * cellSize.z);
     }
 
     private void CreateHighlightObject()
