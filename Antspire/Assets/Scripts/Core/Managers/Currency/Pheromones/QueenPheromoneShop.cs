@@ -15,11 +15,11 @@ public class QueenPheromoneShop : MonoBehaviour, IClickable
     [SerializeField] private Transform queenPosition;
 
     /// <summary>
-    /// Opcjonalnie: skonfigurowana mrówka (NavMeshAgent + AntBasicAI z celami).
+    /// Opcjonalnie: skonfigurowana mrówka (NavMeshAgent + AntWorkerAI + AntThreatResponse).
     /// Prefab sam w sobie nie ma AI ani agenta, więc bez szablonu spawnione
     /// mrówki stałyby w miejscu. Gdy pole jest puste, szukamy takiej mrówki w scenie.
     /// </summary>
-    [SerializeField] private AntBasicAI antTemplate;
+    [SerializeField] private AntWorkerAI antTemplate;
 
     private void Awake()
     {
@@ -46,8 +46,8 @@ public class QueenPheromoneShop : MonoBehaviour, IClickable
 
         Vector3 spawnPos = new Vector3(queenPosition.position.x, 0f, queenPosition.position.z - 2f);
 
-        // Najlepsza ścieżka: klon skonfigurowanej mrówki (agent + AI + cele).
-        AntBasicAI template = antTemplate != null ? antTemplate : FindAnyObjectByType<AntBasicAI>();
+        // Najlepsza ścieżka: klon skonfigurowanej mrówki (agent + AI + walka).
+        AntWorkerAI template = antTemplate != null ? antTemplate : FindAnyObjectByType<AntWorkerAI>();
         if (template != null)
         {
             Instantiate(template.gameObject, spawnPos, template.transform.rotation);
@@ -55,7 +55,7 @@ public class QueenPheromoneShop : MonoBehaviour, IClickable
             return;
         }
 
-        // Fallback: sam prefab - dołoży agenta, ale bez celów mrówka nie ruszy.
+        // Fallback: sam prefab - dorzuci pełny zestaw AI, mrówka sama szuka rutyny (praca/transport/eksploracja).
         if (antWorkerPrefab == null)
         {
             Debug.LogError("QueenPheromoneShop: brak przypisanego prefabu mrówki ani szablonu w scenie.", this);
@@ -64,10 +64,10 @@ public class QueenPheromoneShop : MonoBehaviour, IClickable
 
         GameObject ant = Instantiate(antWorkerPrefab, spawnPos, Quaternion.identity);
         EnsureAntCanMove(ant);
-        Debug.Log("Robotnica zaspawnowana za darmo (brak szablonu AI w scenie - mrówka nie będzie się poruszać).");
+        Debug.Log("Robotnica zaspawnowana za darmo (z prefabu - AI dodane w locie).");
     }
 
-    /// <summary>Dodaje brakujące komponenty ruchu, jeśli prefab ich nie ma.</summary>
+    /// <summary>Dodaje brakujące komponenty AI i ruchu, jeśli prefab ich nie ma.</summary>
     private static void EnsureAntCanMove(GameObject ant)
     {
         if (ant.GetComponent<NavMeshAgent>() == null)
@@ -78,8 +78,12 @@ public class QueenPheromoneShop : MonoBehaviour, IClickable
             agent.autoBraking = true;
         }
 
-        if (ant.GetComponent<AntBasicAI>() == null)
-            ant.AddComponent<AntBasicAI>(); // bez celów - zaloguje błąd i stanie w miejscu
+        // AntWorkerAI sam dociąga brakujące komponenty (NavMeshAgent, AntHealth, AntMover).
+        if (ant.GetComponent<AntWorkerAI>() == null)
+            ant.AddComponent<AntWorkerAI>();
+
+        if (ant.GetComponent<AntThreatResponse>() == null)
+            ant.AddComponent<AntThreatResponse>();
     }
 
     public GameStates GetTargetState() => GameStates.QueenShop;
