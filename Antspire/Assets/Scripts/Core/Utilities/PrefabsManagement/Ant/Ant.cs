@@ -6,7 +6,6 @@ public class Ant : MonoBehaviour, ISaveable, IClickable
     public Vector2Int gridPosition;
     public Vector2Int targetPosition;
     public House assignedHouse;
-    public Workplace assignedWorkplace;
     public int health;
     public int carriedResources;
     Vector3 lastPosition;
@@ -37,12 +36,8 @@ public class Ant : MonoBehaviour, ISaveable, IClickable
 
     void OnDestroy()
     {
-        // Zwalnia etat - inaczej miejsce pracy zostaje "pe�ne" na zawsze.
-        if (assignedWorkplace != null)
-        {
-            assignedWorkplace.CurrentEmployees = Mathf.Max(0, assignedWorkplace.CurrentEmployees - 1);
-            assignedWorkplace = null;
-        }
+        // Zwolnienie etatu należy do AntWorkerAI (OnDestroy -> ReleaseHeldRoutine),
+        // który zajmuje miejsca pracy przez Workplace.TryOccupy()/Release().
 
         SaveManager.Unregister(this);
     }
@@ -52,21 +47,7 @@ public class Ant : MonoBehaviour, ISaveable, IClickable
         assignedHouse = house;
         Debug.Log($"Ant {name} assigned to house {house}");
     }
-    public void AssignWorkplace(Workplace workplace)
-    {
-        if (workplace == null)
-            return;
 
-        assignedWorkplace = workplace;
-        workplace.CurrentEmployees += 1;
-        Debug.Log($"Ant {name} assigned to workplace {workplace.WorkplaceName}");
-    }
-    //public void SetState(AntState newState)
-    //{
-    //    currentState = newState;
-    //    //Debug.Log($"Ant {name} changed state to {newState}");
-    //}
-    
     public void SetPosition()
     {
         if (grid == null)
@@ -87,7 +68,6 @@ public class Ant : MonoBehaviour, ISaveable, IClickable
             position = gridPosition,
             //state = currentState,
             assignedHouse = assignedHouse,
-            assignedWorkplace = assignedWorkplace,
             health = health,
         };
     }
@@ -100,7 +80,6 @@ public class Ant : MonoBehaviour, ISaveable, IClickable
             gridPosition = antData.position;
             //currentState = antData.state;
             assignedHouse = antData.assignedHouse;
-            assignedWorkplace = antData.assignedWorkplace;
             health = antData.health;
         }
     }

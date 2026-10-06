@@ -7,7 +7,6 @@ public class AntData
     public int id;
     public Vector2Int position;
     public House assignedHouse;
-    public Workplace assignedWorkplace;
     public int health;
     public int carriedResourcesCount;
 }

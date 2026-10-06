@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Workplace : MonoBehaviour, ISaveable, IClickable
@@ -12,6 +13,12 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
     [SerializeField] private int capacity = 1;
     [SerializeField] private int currentEmployees = 0;
     [SerializeField] private int level = 1;
+
+    [Header("Taski wykonywane w tym miejscu")]
+    [SerializeField] private List<WorkTaskDefinition> tasks = new List<WorkTaskDefinition>();
+
+    // Rejestracja w puli miejsc pracy - pule nie muszą przeszukiwać sceny.
+    private WorkplacePools registeredPools;
 
     // Properties dla AI
     public string WorkplaceName => workplaceName;
@@ -39,6 +46,28 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
         SaveManager.Register(this);
     }
 
+    void OnEnable()
+    {
+        // Jedno wyszukanie na cykl życia miejsca pracy - potem pule wołają nas same.
+        if (registeredPools == null)
+            registeredPools = FindAnyObjectByType<WorkplacePools>();
+
+        if (registeredPools != null)
+            registeredPools.Register(this);
+    }
+
+    void OnDisable()
+    {
+        if (registeredPools != null)
+            registeredPools.Unregister(this);
+    }
+
+    /// <summary>Zapina dwustronny link pula ↔ miejsce pracy (wołane z WorkplacePools.Register).</summary>
+    internal void AttachPool(WorkplacePools pools)
+    {
+        registeredPools = pools;
+    }
+
     /// Ulepsza wydajność tego miejsca pracy
     public void UpgradeIncome(float upgradeAmount)
     {
@@ -52,15 +81,46 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
         baseIncomePerSecond = newIncome;
     }
 
-    int AvailableSpots()
-    {
-        return Capacity - CurrentEmployees;
-    }
-
     public bool HasAvailableCapacity()
     {
-        AvailableSpots();
-        return CurrentEmployees < Capacity;
+        return AvailableSpots > 0;
+    }
+
+    /// <summary>Procent obsadzenia miejsca pracy (0-100) - na jego podstawie pule sortują miejsca pracy.</summary>
+    public float OccupationPercent => Capacity <= 0 ? 100f : 100f * CurrentEmployees / Capacity;
+
+    /// <summary>Wolne etaty w tym miejscu pracy.</summary>
+    public int AvailableSpots => Mathf.Max(0, Capacity - CurrentEmployees);
+
+    /// <summary>Próba zajęcia jednego etatu. Zwraca false, gdy miejsce jest już pełne.</summary>
+    public bool TryOccupy()
+    {
+        if (AvailableSpots <= 0) return false;
+
+        currentEmployees += 1;
+        NotifyOccupationChanged();
+        return true;
+    }
+
+    /// <summary>Zwolnienie jednego etatu zajętego przez mrówkę (po ukończeniu taska albo przerwaniu go).</summary>
+    public void Release()
+    {
+        currentEmployees = Mathf.Max(0, currentEmployees - 1);
+        NotifyOccupationChanged();
+    }
+
+    /// <summary>Zmiana obsadzenia przestawia to miejsce do właściwej puli od razu, bez czekania na odświeżenie.</summary>
+    private void NotifyOccupationChanged()
+    {
+        if (registeredPools != null)
+            registeredPools.Reclassify(this);
+    }
+
+    /// <summary>Losowo dobiera task do wykonania. Zwraca null, gdy miejsce nie ma zdefiniowanych tasków.</summary>
+    public WorkTaskDefinition PickRandomTask()
+    {
+        if (tasks == null || tasks.Count == 0) return null;
+        return tasks[Random.Range(0, tasks.Count)];
     }
 
     public object GetSaveData()
