@@ -6,6 +6,8 @@ using UnityEngine;
 /// najbliższej żywej mrówki w zasięgu i, gdy ta jest w <see cref="attackRange"/>,
 /// zadaje jej obrażenia. <see cref="Strength"/> (siła) jest porównywana z siłą mrówki -
 /// większa siła sprawia, że mrówka instynktownie ucieka zamiast walczyć.
+/// Przy włączeniu wróg rejestruje się w <see cref="DangerDirector"/>, który pilnuje
+/// strefy mrowiska i odpala akcję DANGER dla mrówek defensywnych i eksplorujących.
 /// Pogonią/ruchem wroga zajmuje się osobny system - tutaj jest celowanie i bicie.
 /// </summary>
 public class EnemyUnit : MonoBehaviour
@@ -27,6 +29,10 @@ public class EnemyUnit : MonoBehaviour
     private float attackTimer;
     private float aggroTimer;
 
+    // Rejestracja w dyrektorze zagrożeń - źródło akcji DANGER dla mrówek.
+    private DangerDirector dangerDirector;
+    private float directorRetryTimer;
+
     /// <summary>Siła tej jednostki - jeśli przewyższa siłę mrówki, ta ucieka instynktownie.</summary>
     public float Strength => strength;
 
@@ -42,6 +48,8 @@ public class EnemyUnit : MonoBehaviour
 
     private void Update()
     {
+        TickDangerRegistration();
+
         if (IsDead) return;
 
         attackTimer = Mathf.Max(0f, attackTimer - Time.deltaTime);
@@ -55,6 +63,39 @@ public class EnemyUnit : MonoBehaviour
 
         attackTimer = attackInterval;
         target.TakeDamage(damage, this);
+    }
+
+    private void OnEnable()
+    {
+        directorRetryTimer = 0f;
+        EnsureDirectorRegistered();
+    }
+
+    private void OnDisable()
+    {
+        // Wyłączony wróg znika ze strefy - mrówki dostają koniec akcji DANGER.
+        if (dangerDirector != null) dangerDirector.Unregister(this);
+    }
+
+    /// <summary>Dopisuje tego wroga do <see cref="DangerDirector"/> - stąd bierze się akcja DANGER.</summary>
+    private void EnsureDirectorRegistered()
+    {
+        if (dangerDirector == null) dangerDirector = FindAnyObjectByType<DangerDirector>();
+        if (dangerDirector == null) return;
+
+        dangerDirector.Register(this);
+    }
+
+    /// <summary>Ponawia szukanie dyrektora, gdy ten nie istniał jeszcze przy włączeniu wroga.</summary>
+    private void TickDangerRegistration()
+    {
+        if (dangerDirector != null) return;
+
+        directorRetryTimer -= Time.deltaTime;
+        if (directorRetryTimer > 0f) return;
+
+        directorRetryTimer = 1f;
+        EnsureDirectorRegistered();
     }
 
     public void TakeDamage(float amount)

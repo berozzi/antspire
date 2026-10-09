@@ -14,6 +14,9 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
     [SerializeField] private int currentEmployees = 0;
     [SerializeField] private int level = 1;
 
+    [Header("Produkcja i magazyn (puste = szukane w hierarchii)")]
+    [SerializeField] private ResourceProducer producer;
+
     [Header("Taski wykonywane w tym miejscu")]
     [SerializeField] private List<WorkTaskDefinition> tasks = new List<WorkTaskDefinition>();
 
@@ -86,6 +89,30 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
         return AvailableSpots > 0;
     }
 
+    /// <summary>
+    /// Budynek produkcyjny tego miejsca pracy - źródło towaru dla mrówki.
+    /// Pole można wypełnić w Inspektorze; puste jest szukane w hierarchii obiektu.
+    /// </summary>
+    public ResourceProducer Producer
+    {
+        get
+        {
+            if (producer == null) producer = GetComponent<ResourceProducer>();
+            if (producer == null) producer = GetComponentInParent<ResourceProducer>();
+            return producer;
+        }
+    }
+
+    /// <summary>Magazyn miejsca pracy (null, gdy miejsce nie ma producenta zasobów).</summary>
+    public ResourceStorage Storage
+    {
+        get
+        {
+            ResourceProducer current = Producer;
+            return current != null ? current.Storage : null;
+        }
+    }
+
     /// <summary>Procent obsadzenia miejsca pracy (0-100) - na jego podstawie pule sortują miejsca pracy.</summary>
     public float OccupationPercent => Capacity <= 0 ? 100f : 100f * CurrentEmployees / Capacity;
 
@@ -149,13 +176,6 @@ public class Workplace : MonoBehaviour, ISaveable, IClickable
             this.capacity = workplaceData.capacity;
             this.Level = workplaceData.level;
         }
-    }
-
-    /// Aktywuje/dezaktywuje generowanie dochodu
-    public void SetIncomeActive(bool active)
-    {
-        isActive = active;
-        Debug.Log($"{workplaceName} - generowanie dochodu: {(active ? "AKTYWNE" : "WYŁĄCZONE")}");
     }
 
     void OnDestroy()
